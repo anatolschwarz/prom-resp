@@ -10,7 +10,7 @@ index 70b3960..c19ecd8 100644
 +[sandbox_workspace_write]
 +writable_roots = ["/home/anatolschwartz/code/prom-resp"]
 diff --git a/docs/CODEX_PROMPTS.md b/docs/CODEX_PROMPTS.md
-index 02dd141..677fb89 100644
+index 02dd141..4c4a5bf 100644
 --- a/docs/CODEX_PROMPTS.md
 +++ b/docs/CODEX_PROMPTS.md
 @@ -3770,6 +3770,158 @@ REPORT:
@@ -172,7 +172,7 @@ index 02dd141..677fb89 100644
  Phase-2 docs checkpoint cleanup only.
  
  Do not commit or push.
-@@ -3852,3 +4004,118 @@ Report:
+@@ -3852,3 +4004,181 @@ Report:
  - files changed
  - validation results
  - git status --short
@@ -291,6 +291,69 @@ index 02dd141..677fb89 100644
 +Request approval when required.
 +
 +Do not print the final response until the prom-resp push has succeeded. The response file and the terminal final response must contain the same complete response text.
++
++Fix and close milestone #26 based on pre-commit review.
++
++Do NOT commit or push contraption-lab.
++
++Append this full prompt verbatim to docs/CODEX_PROMPTS.md.
++
++Required fixes:
++
++1. Remove ambiguity for same-tag contacts.
++   Same-tag rules such as contacts: ["ball", "ball"] must NOT accept a legacy
++   tag-only action target such as target: "ball", because it cannot identify
++   which participant is intended.
++
++   Preserve legacy tag targets for different-tag contacts.
++
++   For same-tag contacts require an unambiguous participant selector:
++   - contact role/index, or
++   - participant id.
++
++   Enforce this in validation and add tests.
++
++2. Restore explicit regression coverage that:
++   - unrelated contacts do nothing
++   - duplicate destroy rules do not destroy the same participant twice
++   - later actions targeting an already-destroyed participant do not execute
++
++3. Run one real focused browser/Playwright execution covering the existing
++   contact path after these changes.
++   Do not only run --list.
++   Keep it narrowly scoped; do not run the whole E2E suite unless necessary.
++
++4. Re-run:
++   npm run typecheck
++   npm run lint
++   npm test
++   npm run format:check
++   npm run build
++   npx playwright test --list
++   git diff --check
++
++Do not make unrelated changes.
++
++Coworking delivery:
++session token: s-20260812-0955-c7d4
++
++Generate BOTH:
++~/code/prom-resp/s-20260812-0955-c7d4-response.md
++~/code/prom-resp/s-20260812-0955-c7d4-diff.patch
++
++The diff patch must represent all current uncommitted contraption-lab changes,
++including tracked, staged/unstaged, new/untracked files, and deletions.
++
++Push both artifacts to prom-resp.
++
++Final response must report:
++- exact fix
++- tests added/changed
++- exact Playwright test actually executed and result
++- all validation results
++- git status --short
++
++Do not commit or push contraption-lab.
 diff --git a/docs/PROJECT_STATE.md b/docs/PROJECT_STATE.md
 index 17e26b3..8d4124c 100644
 --- a/docs/PROJECT_STATE.md
@@ -726,7 +789,7 @@ index bd293b4..54d3996 100644
  
  export type ActorTag = "bird";
 diff --git a/src/levels/validateLevel.ts b/src/levels/validateLevel.ts
-index 646653a..84789d3 100644
+index 646653a..756ceee 100644
 --- a/src/levels/validateLevel.ts
 +++ b/src/levels/validateLevel.ts
 @@ -2,6 +2,10 @@ import type {
@@ -740,7 +803,7 @@ index 646653a..84789d3 100644
    ContactRule,
    ContactTag,
    InventoryDefinition,
-@@ -157,6 +161,85 @@ function validateActors(value: unknown): ActorDefinition[] {
+@@ -157,6 +161,87 @@ function validateActors(value: unknown): ActorDefinition[] {
  const isContactTag = (value: unknown): value is ContactTag =>
    typeof value === "string" && CONTACT_TAGS.includes(value as ContactTag);
  
@@ -766,7 +829,9 @@ index 646653a..84789d3 100644
 +  contacts: readonly [ContactTag, ContactTag],
 +): ContactActionTarget | undefined {
 +  if (isContactTag(value)) {
-+    return contacts.includes(value) ? value : undefined;
++    return contacts[0] !== contacts[1] && contacts.includes(value)
++      ? value
++      : undefined;
 +  }
 +  return validateContactParticipantSelector(value);
 +}
@@ -826,7 +891,7 @@ index 646653a..84789d3 100644
  function validateContactRules(value: unknown): ContactRule[] {
    if (!Array.isArray(value)) {
      throw new Error("Level contactRules must be an array.");
-@@ -169,31 +252,48 @@ function validateContactRules(value: unknown): ContactRule[] {
+@@ -169,31 +254,48 @@ function validateContactRules(value: unknown): ContactRule[] {
      if (
        rule.contacts.length !== 2 ||
        !isContactTag(firstTag) ||
@@ -886,7 +951,7 @@ index 646653a..84789d3 100644
    });
  }
 diff --git a/tests/contactRules.test.ts b/tests/contactRules.test.ts
-index c557e97..19b6d3e 100644
+index c557e97..553b7eb 100644
 --- a/tests/contactRules.test.ts
 +++ b/tests/contactRules.test.ts
 @@ -1,20 +1,43 @@
@@ -940,7 +1005,7 @@ index c557e97..19b6d3e 100644
    };
  }
  
-@@ -24,58 +47,144 @@ describe("contact rules", () => {
+@@ -24,58 +47,180 @@ describe("contact rules", () => {
      action: { type: "destroy", target: "block" },
    };
  
@@ -970,14 +1035,54 @@ index c557e97..19b6d3e 100644
 -  it("does not act on unrelated contacts or destroy the same target twice", () => {
 -    const ball = participant("ball");
 -    const ramp = participant("ramp");
--    executeContactRules([destroyBlock], ball, ramp);
++  it("does nothing for unrelated contacts and destroys a target only once", () => {
++    const ball = participant("ball-1", "ball");
++    const ramp = participant("ramp-1", "ramp");
+     executeContactRules([destroyBlock], ball, ramp);
 -    expect(ball.wasDestroyed()).toBe(false);
 -    expect(ramp.wasDestroyed()).toBe(false);
--
++    expect(ball.destroyCount()).toBe(0);
++    expect(ramp.destroyCount()).toBe(0);
+ 
 -    const target = participant("block");
 -    executeContactRules([destroyBlock, destroyBlock], ball, target);
 -    expect(target.wasDestroyed()).toBe(true);
 -    expect(target.destroyCount()).toBe(1);
++    const block = participant("block-1", "block");
++    executeContactRules([destroyBlock, destroyBlock], ball, block);
++    expect(block.destroyCount()).toBe(1);
+   });
+ 
+-  it("executes the bird-to-block destroy rule after their physical contact", () => {
+-    const bird = participant("bird");
+-    const block = participant("block");
+-    const destroyBirdBlock: ContactRule = {
+-      contacts: ["bird", "block"],
+-      action: { type: "destroy", target: "block" },
++  it("does not execute later actions for an already-destroyed participant", () => {
++    const ball = participant("ball-1", "ball", { x: 1, y: 0 });
++    const block = participant("block-1", "block");
++    const rules: ContactRule[] = [
++      {
++        contacts: ["ball", "block"],
++        action: { type: "destroy", target: { type: "contact", index: 0 } },
++      },
++      {
++        contacts: ["ball", "block"],
++        action: {
++          type: "impulse",
++          target: { type: "contact", index: 0 },
++          impulse: { x: 5, y: 0 },
++        },
++      },
++    ];
++
++    executeContactRules(rules, ball, block);
++    expect(ball.destroyCount()).toBe(1);
++    expect(ball.effects()).toEqual(["destroy"]);
++    expect(ball.velocity()).toEqual({ x: 1, y: 0 });
++  });
++
 +  it("applies a declared impulse to the selected contact role", () => {
 +    const ball = participant("ball-1", "ball", { x: 2, y: -1 });
 +    const block = participant("block-1", "block");
@@ -988,18 +1093,15 @@ index c557e97..19b6d3e 100644
 +        target: { type: "contact", index: 0 },
 +        impulse: { x: 3, y: 4 },
 +      },
-+    };
-+
+     };
+ 
+-    executeContactRules([destroyBirdBlock], bird, block);
 +    executeContactRules([rule], block, ball);
 +    expect(ball.velocity()).toEqual({ x: 5, y: 3 });
-   });
++  });
  
--  it("executes the bird-to-block destroy rule after their physical contact", () => {
--    const bird = participant("bird");
--    const block = participant("block");
--    const destroyBirdBlock: ContactRule = {
--      contacts: ["bird", "block"],
--      action: { type: "destroy", target: "block" },
+-    expect(bird.wasDestroyed()).toBe(false);
+-    expect(block.destroyCount()).toBe(1);
 +  it("redirects while preserving speed, including a reversed contact order", () => {
 +    const ball = participant("ball-1", "ball", { x: 3, y: 4 });
 +    const block = participant("block-1", "block");
@@ -1010,15 +1112,18 @@ index c557e97..19b6d3e 100644
 +        target: { type: "contact", index: 0 },
 +        direction: { x: -1, y: 0 },
 +      },
-     };
- 
--    executeContactRules([destroyBirdBlock], bird, block);
++    };
++
 +    executeContactRules([rule], block, ball);
 +    expect(ball.velocity()).toEqual({ x: -5, y: 0 });
-+  });
+   });
  
--    expect(bird.wasDestroyed()).toBe(false);
--    expect(block.destroyCount()).toBe(1);
+-  it("executes a declarative bird-to-ramp destroy rule without actor-specific logic", () => {
+-    const bird = participant("bird");
+-    const ramp = participant("ramp");
+-    const destroyBirdRamp: ContactRule = {
+-      contacts: ["bird", "ramp"],
+-      action: { type: "destroy", target: "ramp" },
 +  it("evaluates generic participant-id conditions deterministically", () => {
 +    const rule: ContactRule = {
 +      contacts: ["ball", "block"],
@@ -1034,7 +1139,7 @@ index c557e97..19b6d3e 100644
 +        target: { type: "contact", index: 0 },
 +        impulse: { x: 1, y: 0 },
 +      },
-+    };
+     };
 +    const chosen = participant("chosen-ball", "ball");
 +    const rejected = participant("other-ball", "ball");
 +    const block = participant("block-1", "block");
@@ -1061,14 +1166,8 @@ index c557e97..19b6d3e 100644
 +    executeContactRules([rule], secondBall, firstBall);
 +    expect(firstBall.velocity()).toEqual({ x: 1, y: 0 });
 +    expect(secondBall.velocity()).toEqual({ x: 0, y: 1 });
-   });
- 
--  it("executes a declarative bird-to-ramp destroy rule without actor-specific logic", () => {
--    const bird = participant("bird");
--    const ramp = participant("ramp");
--    const destroyBirdRamp: ContactRule = {
--      contacts: ["bird", "ramp"],
--      action: { type: "destroy", target: "ramp" },
++  });
++
 +  it("executes matching rules in source order and repeats deterministically", () => {
 +    const rules: ContactRule[] = [
 +      {
@@ -1092,16 +1191,16 @@ index c557e97..19b6d3e 100644
 +      const ball = participant("ball-1", "ball", { x: 1, y: 0 });
 +      executeContactRules(rules, ball, participant("block-1", "block"));
 +      return { effects: ball.effects(), velocity: ball.velocity() };
-     };
- 
--    executeContactRules([destroyBirdRamp], ramp, bird);
++    };
++
 +    expect(run()).toEqual({
 +      effects: ["impulse:2,0", "redirect:0,1"],
 +      velocity: { x: 0, y: 3 },
 +    });
 +    expect(run()).toEqual(run());
 +  });
-+
+ 
+-    executeContactRules([destroyBirdRamp], ramp, bird);
 +  it("dispatches only registered capabilities, not concrete object types", () => {
 +    const experimental = participant("experimental-1", "unlisted-widget", {
 +      x: 1,
@@ -1124,10 +1223,10 @@ index c557e97..19b6d3e 100644
    });
  });
 diff --git a/tests/levelValidation.test.ts b/tests/levelValidation.test.ts
-index 06331b1..034eec9 100644
+index 06331b1..ce1397a 100644
 --- a/tests/levelValidation.test.ts
 +++ b/tests/levelValidation.test.ts
-@@ -161,6 +161,66 @@ describe("validateLevel", () => {
+@@ -161,6 +161,77 @@ describe("validateLevel", () => {
      ).toThrow(/destroy one of its contact tags/i);
    });
  
@@ -1189,6 +1288,17 @@ index 06331b1..034eec9 100644
 +        ],
 +      }),
 +    ).toThrow(/unknown or invalid condition/i);
++    expect(() =>
++      validateLevel({
++        ...rawLevel,
++        contactRules: [
++          {
++            contacts: ["ball", "ball"],
++            action: { type: "destroy", target: "ball" },
++          },
++        ],
++      }),
++    ).toThrow(/unknown or invalid action/i);
 +  });
 +
    it("requires valid actor patrol definitions", () => {
