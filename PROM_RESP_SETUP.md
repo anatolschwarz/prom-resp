@@ -14,15 +14,21 @@ Purpose: provide a simple handoff channel from local Codex to ChatGPT through Gi
 
 For each ChatGPT ↔ Codex session, use one fixed session token.
 
-Response filename:
+Normal handoff artifacts:
 
-`<session-token>-response.md`
+- `<session-token>-response.md`
+- `<session-token>-diff.patch`
 
 Current session example:
 
 `s-20260812-0955-c7d4-response.md`
 
-Codex writes its complete final response to that file. ChatGPT then fetches the file from GitHub.
+`s-20260812-0955-c7d4-diff.patch`
+
+Codex writes its complete final response to the response file and generates the
+patch directly. The patch represents all uncommitted Contraption Lab changes:
+tracked staged and unstaged changes, new/untracked files, and deletions; it is
+binary-safe where practical. ChatGPT then fetches both artifacts from GitHub.
 
 ## Git / SSH Setup
 
@@ -99,7 +105,8 @@ Current-session example:
 ~/code/prom-resp/push-response.sh s-20260812-0955-c7d4
 ```
 
-The helper stages the response file, commits it if changed, pulls/rebases `origin main`, and pushes.
+The helper stages both artifacts, commits if either changed, pulls/rebases
+`origin main`, and pushes. Either artifact may be unchanged; both must exist.
 
 This remains the manual fallback when direct Codex Git delivery is not used.
 
@@ -107,27 +114,37 @@ This remains the manual fallback when direct Codex Git delivery is not used.
 
 Operational Codex prompts should instruct Codex to:
 
-1. Print its complete final response normally in the terminal.
+1. Implement and validate the requested Contraption Lab change.
 2. Write the exact same final response to:
    `~/code/prom-resp/<session-token>-response.md`
-3. In `~/code/prom-resp`:
-   - stage the response file;
+3. Generate `~/code/prom-resp/<session-token>-diff.patch` directly from all
+   current uncommitted Contraption Lab changes. Do not use or add a
+   `make-diff.sh` helper.
+4. In `~/code/prom-resp`:
+   - stage both artifacts;
    - commit it;
    - pull/rebase from `origin main`;
    - push to `origin main`;
    - request approval when required.
-4. Claim delivery success only after the Git push succeeds.
+5. Claim delivery success only after the Git push succeeds, then print its
+   complete final response normally in the terminal.
 
 ChatGPT can then fetch:
 
-`<session-token>-response.md`
+`<session-token>-response.md` and `<session-token>-diff.patch`
 
 from `anatolschwarz/prom-resp`.
 
 ## Operational Convention
 
 - One fixed session token per ChatGPT ↔ Codex session.
-- Response file: `<session-token>-response.md`.
-- Preferred path: Codex writes, commits, and pushes the response directly.
-- Fallback path: Codex writes the response; user runs `push-response.sh <session-token>`.
+- Normal artifacts: `<session-token>-response.md` and
+  `<session-token>-diff.patch`.
+- Normal flow: implementation → generate response + diff → push `prom-resp` →
+  ChatGPT reviews as needed → only then commit/push `contraption-lab`.
+- Preferred path: Codex generates both artifacts, commits, and pushes them
+  directly.
+- Fallback path: Codex generates both artifacts; user runs
+  `push-response.sh <session-token>`.
+- A full-code/review branch is exceptional escalation, not the normal handoff.
 - Secrets and private SSH keys are never stored in either repository.
