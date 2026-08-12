@@ -1,8 +1,8 @@
 diff --git a/docs/CODEX_PROMPTS.md b/docs/CODEX_PROMPTS.md
-index 4c4a5bf..98cedff 100644
+index 4c4a5bf..e958789 100644
 --- a/docs/CODEX_PROMPTS.md
 +++ b/docs/CODEX_PROMPTS.md
-@@ -4182,3 +4182,168 @@ Final response must report:
+@@ -4182,3 +4182,223 @@ Final response must report:
  - git status --short
  
  Do not commit or push contraption-lab.
@@ -171,6 +171,61 @@ index 4c4a5bf..98cedff 100644
 +
 +Do not print the final response until the prom-resp push succeeds.
 +Do NOT commit or push contraption-lab.
++
++Fix the #27 Settings-panel regression only.
++
++Do NOT commit or push contraption-lab.
++Work from the CURRENT local tree.
++Do not reset/discard unrelated local work.
++
++Bug:
++The Settings panel is always visible after #27.
++
++Likely cause:
++`.settings-panel { display: grid; }` overrides the HTML `hidden` state.
++
++Required fix:
++- When the Settings panel has the `hidden` attribute, it must be completely hidden.
++- Preserve the current Settings toggle behavior and #27 parent-setting controls.
++- Make the smallest CSS/markup fix needed.
++- Do not redesign Settings.
++- Do not change gameplay, timer, locking, progression, parent settings, Parts Palette, or unrelated UI.
++
++Add focused regression coverage:
++- Settings panel is hidden on initial load.
++- Click Settings -> panel visible.
++- Click Settings again -> panel hidden.
++- Existing parent-setting controls still work after reopening.
++
++Append THIS FULL PROMPT verbatim to docs/CODEX_PROMPTS.md.
++
++Run:
++- npm run typecheck
++- npm run lint
++- npm test
++- npm run format:check
++- npm run build
++- focused real Playwright test for the Settings toggle
++- git diff --check
++
++Coworking delivery:
++session token: s-20260812-0955-c7d4
++
++Update BOTH:
++~/code/prom-resp/s-20260812-0955-c7d4-response.md
++~/code/prom-resp/s-20260812-0955-c7d4-diff.patch
++
++Push both artifacts to prom-resp.
++
++Final response must report:
++- exact root cause
++- exact fix
++- test added/changed
++- exact focused Playwright command/result
++- validation results
++- git status --short
++
++Do not commit or push contraption-lab.
 diff --git a/docs/PROJECT_STATE.md b/docs/PROJECT_STATE.md
 index 8d4124c..a10a072 100644
 --- a/docs/PROJECT_STATE.md
@@ -249,7 +304,7 @@ index 0d6473c..8de462e 100644
  ### #28 — Dynamic/toppling Block capability
  
 diff --git a/e2e/puzzle.e2e.ts b/e2e/puzzle.e2e.ts
-index bc30f65..e131e25 100644
+index bc30f65..582ff2d 100644
 --- a/e2e/puzzle.e2e.ts
 +++ b/e2e/puzzle.e2e.ts
 @@ -516,10 +516,22 @@ async function selectPuzzle(page: Page, puzzleId: string): Promise<void> {
@@ -319,7 +374,7 @@ index bc30f65..e131e25 100644
    await expect(palette).toBeHidden();
    expectNoConsoleErrors(app);
  });
-@@ -739,12 +751,58 @@ test("Rerun restores its run-start layout and Reset restores JSON defaults", asy
+@@ -739,12 +751,79 @@ test("Rerun restores its run-start layout and Reset restores JSON defaults", asy
    expectNoConsoleErrors(app);
  });
  
@@ -369,6 +424,27 @@ index bc30f65..e131e25 100644
 +  expectNoConsoleErrors(app);
 +});
 +
++test("toggles Settings and retains parent controls after reopening", async ({
++  page,
++}) => {
++  const app = await startApp(page);
++  const settings = page.locator("#settings-panel");
++  const settingsButton = page.getByRole("button", { name: "Settings" });
++
++  await expect(settings).toBeHidden();
++  await settingsButton.click();
++  await expect(settings).toBeVisible();
++  await page.getByLabel("Timers and timeout").check();
++  await page.getByLabel("Puzzle locking").check();
++  await settingsButton.click();
++  await expect(settings).toBeHidden();
++  await settingsButton.click();
++  await expect(settings).toBeVisible();
++  await expect(page.getByLabel("Timers and timeout")).toBeChecked();
++  await expect(page.getByLabel("Puzzle locking")).toBeChecked();
++  expectNoConsoleErrors(app);
++});
++
  test("times a puzzle through Run, Pause, Resume, Rerun, and Timeout", async ({
    page,
  }) => {
@@ -379,7 +455,7 @@ index bc30f65..e131e25 100644
    await expect(page.locator("#puzzle-title-label")).toHaveText("Timed Relay");
    await expect(app.timer).toHaveText("Time: 0:30");
  
-@@ -776,7 +834,7 @@ test("loads the first real Basic puzzle pair with their defined timers and inven
+@@ -776,7 +855,7 @@ test("loads the first real Basic puzzle pair with their defined timers and inven
    page,
  }) => {
    const app = await startApp(page);
@@ -388,7 +464,7 @@ index bc30f65..e131e25 100644
  
    await selectPuzzle(page, "down-the-ramp-004");
    await expect(page.locator("#puzzle-selector-button")).toHaveText(
-@@ -825,6 +883,8 @@ test("enforces puzzle locks and isolates switched runtime state", async ({
+@@ -825,6 +904,8 @@ test("enforces puzzle locks and isolates switched runtime state", async ({
    page,
  }) => {
    const app = await startApp(page);
@@ -397,7 +473,7 @@ index bc30f65..e131e25 100644
    await page.locator("#puzzle-selector-button").click();
    await expect(
      page.locator('[data-puzzle-id="relay-shift-002"]'),
-@@ -1378,6 +1438,7 @@ test("keeps the live Ball transform through Pause, Success, and Timeout", async
+@@ -1378,6 +1459,7 @@ test("keeps the live Ball transform through Pause, Success, and Timeout", async
    );
  
    await enableUnlockAll(page);
@@ -678,7 +754,7 @@ index 173df07..7f4c96f 100644
      : undefined;
  }
 diff --git a/src/style.css b/src/style.css
-index c63a359..5249278 100644
+index c63a359..a378cae 100644
 --- a/src/style.css
 +++ b/src/style.css
 @@ -61,6 +61,12 @@ h1 {
@@ -694,13 +770,17 @@ index c63a359..5249278 100644
  .status-panel {
    display: flex;
    align-items: center;
-@@ -256,6 +262,25 @@ h1 {
+@@ -256,6 +262,29 @@ h1 {
    font-weight: 800;
  }
  
 +.settings-panel {
 +  display: grid;
 +  gap: 10px;
++}
++
++.settings-panel[hidden] {
++  display: none;
 +}
 +
 +.settings-heading {
