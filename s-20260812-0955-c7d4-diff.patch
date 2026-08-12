@@ -1,1309 +1,940 @@
-diff --git a/.codex/config.toml b/.codex/config.toml
-index 70b3960..c19ecd8 100644
---- a/.codex/config.toml
-+++ b/.codex/config.toml
-@@ -1,2 +1,5 @@
--approval_policy = "never"
-+approval_policy = "on-request"
- sandbox_mode = "workspace-write"
-+
-+[sandbox_workspace_write]
-+writable_roots = ["/home/anatolschwartz/code/prom-resp"]
 diff --git a/docs/CODEX_PROMPTS.md b/docs/CODEX_PROMPTS.md
-index 02dd141..4c4a5bf 100644
+index 4c4a5bf..98cedff 100644
 --- a/docs/CODEX_PROMPTS.md
 +++ b/docs/CODEX_PROMPTS.md
-@@ -3770,6 +3770,158 @@ REPORT:
- - validation results
+@@ -4182,3 +4182,168 @@ Final response must report:
  - git status --short
  
-+#25 — Headless Simulation Runner
+ Do not commit or push contraption-lab.
 +
-+Do NOT commit or push.
++Implement milestone #27 — Gentle default + parent gate + wordless Play shell.
 +
-+Goal:
-+Add a browser-independent simulation runner that can prove a level/reference
-+solution actually reaches the Goal under the same deterministic physics rules
-+used by the game.
-+
-+Do NOT add Sunny Attic mechanics, UI, art, audio, new levels, or unrelated
-+refactors.
-+
-+## Requirements
-+
-+Add a small API conceptually like:
-+
-+simulate(level, placements, options?) -> {
-+solved: boolean
-+ticks: number
-+events: ...
-+}
-+
-+Exact names/types are your choice, but keep the API minimal and testable.
-+
-+The runner must:
-+
-+* run under Vitest without Playwright/browser UI
-+* use the existing fixed 60 Hz simulation semantics
-+* reuse existing level JSON/types/validation where practical
-+* preserve current collision/goal behavior
-+* terminate deterministically on:
-+
-+  * Goal reached
-+  * configured max tick limit
-+* expose enough result data to diagnose failures:
-+
-+  * solved
-+  * ticks elapsed
-+  * small deterministic event/result trace
-+* produce identical results for identical inputs
-+
-+Do NOT create a second independent interpretation of gameplay physics if the
-+existing Matter/Phaser substrate can be reused safely.
-+
-+Do NOT add a separate matter-js dependency unless strictly necessary.
-+If you believe a new dependency is required, STOP and report why before adding it.
-+
-+## Reference placements
-+
-+Use existing known working solutions already present in repo tests/docs.
-+
-+At minimum add headless verification for:
-+
-+* the legacy known two-ramp solution
-+* Down the Ramp
-+* Bridge the Gap
-+
-+Use current repo data/tests as the source of coordinates/rotations.
-+
-+Also add at least one deliberately incorrect placement/reference case that
-+does NOT solve.
-+
-+Do not change puzzle geometry or existing reference solutions to make the
-+runner pass.
-+
-+## Architecture
-+
-+Prefer:
-+
-+* browser-independent module under src/game/ or another existing appropriate area
-+* pure/simple orchestration around deterministic Matter stepping
-+* no DOM
-+* no Phaser rendering
-+* no timers tied to real wall-clock time
-+* explicit max-tick guard
-+
-+If Phaser makes true headless execution impractical, investigate the smallest
-+shared-physics extraction possible. Do not rewrite the scene architecture.
-+
-+## Tests
-+
-+Add focused Vitest coverage for:
-+
-+1. known valid reference solution solves
-+2. invalid solution does not solve
-+3. repeated runs are deterministic:
-+
-+   * same solved result
-+   * same tick count
-+   * same event ordering/result trace
-+4. max-tick termination works
-+5. runner does not mutate the input level/reference placement objects
-+
-+Keep tests fast enough for normal `npm test`.
-+
-+Do not remove or weaken existing Playwright tests. The headless runner
-+supplements them; it does not replace browser smoke coverage yet.
-+
-+## Documentation
-+
-+Update:
-+
-+* docs/PROJECT_STATE.md only for factual implemented #25 capability
-+* docs/ROADMAP.md: mark #25 complete only if acceptance criteria are met
-+* docs/PHASE2_RECONCILIATION.md only if a small factual implementation note is
-+  required; do not rewrite the plan
-+
-+Append THIS FULL PROMPT verbatim to docs/CODEX_PROMPTS.md.
-+
-+## Validation
-+
-+Run:
-+
-+npm run typecheck
-+npm run lint
-+npm test
-+npm run format:check
-+npm run build
-+npx playwright test --list
-+git diff --check
-+
-+Do not require the full Playwright suite inside the sandbox if environment
-+limitations prevent it.
-+
-+## Acceptance criteria
-+
-+#25 is complete only if:
-+
-+* a level can be simulated without rendering/browser UI
-+* valid existing reference solutions reach Goal headlessly
-+* invalid reference solution fails
-+* deterministic repeat runs match
-+* max-tick guard prevents hangs
-+* existing gameplay behavior was not changed
-+* no new dependency was added
-+* all required static/unit/build checks pass
-+
-+## Report
-+
-+Return:
-+
-+* architecture chosen
-+* exact runner API
-+* files changed
-+* which reference solutions were verified
-+* approximate Vitest runtime for the new headless tests
-+* any Phaser/Matter limitation discovered
-+* validation results
-+* `git status --short`
-+
-+Do not commit or push.
-+
- Phase-2 docs checkpoint cleanup only.
- 
- Do not commit or push.
-@@ -3852,3 +4004,181 @@ Report:
- - files changed
- - validation results
- - git status --short
-+
-+Implement milestone #26 — Contact Actions v2.
-+
-+Work from the CURRENT local tree. Do not reset, discard, or overwrite unrelated local work.
-+
-+Before implementation:
-+- Read AGENTS.md and relevant Phase-2/project docs.
-+- Inspect the current contact-rule implementation, validation, browser runtime, and #25 headless simulator.
-+- Append this entire prompt verbatim to docs/CODEX_PROMPTS.md.
-+
-+Goal
-+Extend the existing declarative contact system beyond destroy with:
-+- impulse
-+- redirect
-+- conditional execution
-+
-+Architecture requirement
-+Do NOT design around a presumed final object catalog.
-+
-+The system must make future object types convenient to add and obsolete ones convenient to remove:
-+- contact/action execution must not contain object-specific branches such as Ball/Cat/Fan/etc.
-+- do not introduce a switch over every object type.
-+- keep object/contact identity centrally declarative or registered.
-+- adding/removing an object type must not require editing the contact-action engine itself.
-+- object-specific behavior belongs with the object/capability implementation, not in generic contact dispatch.
-+- do not implement the future Fable/Sunny Attic object catalog now.
-+- do not implement Painted Blocks/toppling; that remains #28.
-+
-+Preserve
-+- existing destroy behavior
-+- existing puzzles
-+- deterministic fixed-step behavior
-+- JSON-defined/validated level architecture
-+- browser/headless semantic parity
-+
-+Actions
-+1. destroy
-+   - preserve current behavior and compatibility.
-+
-+2. impulse
-+   - declarative vector impulse applied to the selected contact participant.
-+   - deterministic.
-+
-+3. redirect
-+   - declaratively changes the selected participant’s travel direction.
-+   - define clear deterministic semantics.
-+   - avoid object-specific assumptions.
-+
-+Conditions
-+Add a small, generic, extensible condition mechanism for contact rules.
-+
-+Requirements:
-+- conditions are declarative and schema-validated.
-+- matching must be deterministic.
-+- conditions must operate on generic participant/contact state rather than named characters or future object classes.
-+- keep the condition model small; do not predict every future condition now.
-+- adding another condition predicate later should require localized extension, not changes throughout the engine.
-+
-+Participant targeting
-+Make targeting unambiguous and generic, including reversed contact order and same-type contacts where practical. Do not rely on assumptions that every contact pair contains two different tags.
-+
-+Shared semantics
-+Browser play and #25 headless simulation must use the same core rule matching/action semantics. Do not create separate browser-only and headless-only implementations.
-+
-+Tests
-+Add focused tests covering at least:
-+- existing destroy regression
-+- impulse
-+- redirect
-+- condition true
-+- condition false
-+- reversed contact participant order
-+- deterministic repeated execution
-+- multiple matching rules / deterministic ordering where applicable
-+- proof that the action executor itself is not tied to today's concrete object list
-+- browser/headless shared behavior at the appropriate layer
-+
-+Validation
-+Run the repository’s relevant existing validation commands, including:
-+- typecheck
-+- lint
-+- unit tests
-+- format check
-+- build
-+- Playwright test discovery/list
-+Run additional targeted tests if appropriate.
-+
-+Do not make unrelated UI/art/puzzle changes.
-+Do not commit or push the contraption-lab repository.
-+
-+Final response
-+Report concisely:
-+- architecture chosen
-+- files changed
-+- exact impulse/redirect/condition semantics
-+- how add/remove-object extensibility is achieved
-+- tests/validation results
-+- any remaining limitation or deliberate deferral
-+
-+Coworking delivery
-+Use session token:
-+s-20260812-0955-c7d4
-+
-+Write the exact complete final response to:
-+~/code/prom-resp/s-20260812-0955-c7d4-response.md
-+
-+Then in ~/code/prom-resp:
-+1. git add s-20260812-0955-c7d4-response.md
-+2. git commit -m "Add response s-20260812-0955-c7d4" if there is a change
-+3. git pull --rebase origin main
-+4. git push origin main
-+
-+Request approval when required.
-+
-+Do not print the final response until the prom-resp push has succeeded. The response file and the terminal final response must contain the same complete response text.
-+
-+Fix and close milestone #26 based on pre-commit review.
-+
++Work from the CURRENT local tree.
++Do not reset/discard unrelated local work.
 +Do NOT commit or push contraption-lab.
 +
-+Append this full prompt verbatim to docs/CODEX_PROMPTS.md.
++Before implementation:
++- Read AGENTS.md.
++- Read docs/PHASE2_RECONCILIATION.md.
++- Read docs/PROJECT_STATE.md and docs/ROADMAP.md.
++- Inspect current Play UI, Settings, timer/failure/progression/locking behavior.
++- Append THIS FULL PROMPT verbatim to docs/CODEX_PROMPTS.md.
 +
-+Required fixes:
++Goal
++Make the default child-facing Play experience gentle and usable without reading.
 +
-+1. Remove ambiguity for same-tag contacts.
-+   Same-tag rules such as contacts: ["ball", "ball"] must NOT accept a legacy
-+   tag-only action target such as target: "ball", because it cannot identify
-+   which participant is intended.
++The approved Phase-2 contract is:
++- no timer by default
++- no failure state by default
++- no puzzle locking by default
++- timer/failure/locking may remain only as parent-gated options
++- those options are OFF by default
++- child-facing Play controls/goals must not require reading
 +
-+   Preserve legacy tag targets for different-tag contacts.
++Preserve the current deterministic/JSON architecture and existing mechanics.
 +
-+   For same-tag contacts require an unambiguous participant selector:
-+   - contact role/index, or
-+   - participant id.
++1. Gentle defaults
 +
-+   Enforce this in validation and add tests.
++For a fresh user/default state:
++- timed puzzles must continue playing after their configured timer reaches zero
++- reaching zero must NOT enter Timeout/Failed
++- puzzle selection must not be blocked by progression locks
++- all built-in puzzles must be selectable
++- earned completion/progression data may continue to be recorded
++- Reset/Rerun/puzzle switching semantics must remain deterministic
 +
-+2. Restore explicit regression coverage that:
-+   - unrelated contacts do nothing
-+   - duplicate destroy rules do not destroy the same participant twice
-+   - later actions targeting an already-destroyed participant do not execute
++Do NOT delete the existing timer/failure/locking capabilities.
 +
-+3. Run one real focused browser/Playwright execution covering the existing
-+   contact path after these changes.
-+   Do not only run --list.
-+   Keep it narrowly scoped; do not run the whole E2E suite unless necessary.
++2. Parent gate
 +
-+4. Re-run:
-+   npm run typecheck
-+   npm run lint
-+   npm test
-+   npm run format:check
-+   npm run build
-+   npx playwright test --list
-+   git diff --check
++Create the smallest coherent parent-only Settings area/control that exposes:
++- Timers / failure mode
++- Puzzle locking / progression gating
 +
-+Do not make unrelated changes.
++Both must default OFF.
 +
-+Coworking delivery:
-+session token: s-20260812-0955-c7d4
++When parent timer/failure mode is ON:
++- preserve the existing timed-puzzle countdown and Timeout/Failed behavior.
++
++When parent puzzle-locking mode is ON:
++- preserve existing sequential unlocking/progression behavior.
++
++Requirements:
++- persist parent settings locally
++- disabling a parent option must not erase earned progress
++- re-enabling it restores the existing underlying behavior
++- do not add accounts, PIN systems, backend, or elaborate parental-control infrastructure
++- keep the gate deliberately minimal for this milestone
++
++If the existing Settings architecture already provides a suitable parent-facing
++boundary, extend it rather than creating a parallel settings system.
++
++3. Wordless Play shell
++
++Audit the CHILD-FACING Play screen only.
++
++Replace or supplement essential text-dependent controls with clear visual/iconic
++affordances so a child does not need to read in order to:
++- start/pause play
++- rerun
++- reset
++- open Parts
++- identify/place available parts
++- open/select puzzles
++- recognize the Goal / success state
++
++Requirements:
++- retain text/aria-labels for accessibility and tests
++- parent-facing Settings may remain textual
++- puzzle names/metadata may remain visible, but reading them must not be required
++  to operate Play
++- do not perform a broad art redesign; #29 owns the Storybook asset pipeline
++- use lightweight existing/CSS/Phaser primitives where appropriate
++- preserve existing stable ids/test hooks where practical
++
++4. Scope limits
++
++Do NOT implement:
++- #28 dynamic/toppling Blocks
++- #29 Storybook asset pipeline
++- Chapter-1 levels #30+
++- new mechanics
++- new dependencies
++- accounts/network/backend
++- large Settings redesign
++- final parent-gate interaction beyond the smallest functional gate
++
++Do not change puzzle physics, reference solutions, contact semantics, or fixed-step simulation.
++
++5. Tests
++
++Add focused coverage for at least:
++- fresh/default state has timer/failure OFF
++- timed puzzle continues after zero with gentle default
++- enabling parent timer/failure restores Timeout behavior
++- fresh/default state has puzzle locking OFF
++- all built-in puzzles selectable with locking OFF
++- enabling locking restores sequential progression restrictions
++- toggling locking does not delete earned progress
++- parent settings persist locally
++- essential Play actions remain operable without relying on visible text
++- Reset/Rerun remain deterministic under both modes
++
++Run one focused real Playwright scenario exercising the new gentle/default behavior.
++
++6. Documentation
++
++Update:
++- docs/PROJECT_STATE.md with factual implemented #27 behavior
++- docs/ROADMAP.md: mark #27 complete only if acceptance criteria are met
++- docs/PHASE2_RECONCILIATION.md only for a small factual completion note if appropriate
++
++Do not rewrite the Phase-2 plan.
++
++7. Validation
++
++Run:
++- npm run typecheck
++- npm run lint
++- npm test
++- npm run format:check
++- npm run build
++- npx playwright test --list
++- focused real Playwright test for #27
++- git diff --check
++
++Report:
++- parent-setting model/storage
++- exact default behavior
++- exact behavior when each parent option is enabled
++- wordless Play-shell changes
++- files changed
++- tests and validation results
++- exact focused Playwright command/result
++- anything deliberately deferred
++- git status --short
++
++Coworking delivery
++
++Use session token:
++s-20260812-0955-c7d4
 +
 +Generate BOTH:
 +~/code/prom-resp/s-20260812-0955-c7d4-response.md
 +~/code/prom-resp/s-20260812-0955-c7d4-diff.patch
 +
-+The diff patch must represent all current uncommitted contraption-lab changes,
-+including tracked, staged/unstaged, new/untracked files, and deletions.
++The patch must represent all current uncommitted contraption-lab changes,
++including tracked staged/unstaged changes, new/untracked files, deletions,
++and binary changes where practical.
 +
 +Push both artifacts to prom-resp.
 +
-+Final response must report:
-+- exact fix
-+- tests added/changed
-+- exact Playwright test actually executed and result
-+- all validation results
-+- git status --short
-+
-+Do not commit or push contraption-lab.
++Do not print the final response until the prom-resp push succeeds.
++Do NOT commit or push contraption-lab.
 diff --git a/docs/PROJECT_STATE.md b/docs/PROJECT_STATE.md
-index 17e26b3..8d4124c 100644
+index 8d4124c..a10a072 100644
 --- a/docs/PROJECT_STATE.md
 +++ b/docs/PROJECT_STATE.md
-@@ -106,6 +106,13 @@ same 25° rotation (five 5° Q/E steps).
-   fixed platform geometry, a fixed dynamic Ball, and a Goal. The shared Phaser
-   rendering now uses an off-white grid, dark fixed platforms, wooden player
-   parts, glossy red Balls, and green cup-style Goals.
-+- **#25 — Headless simulation runner:** added a browser-independent runner
-+  using Phaser's bundled Matter engine at the same fixed 60 Hz step as the
-+  scene. It simulates level geometry, Balls, Birds, declarative contact rules,
-+  and Goal contact without rendering, returning deterministic solved/tick/event
-+  results with a max-tick guard. Vitest verifies the legacy two-ramp, Down the
-+  Ramp, and Bridge the Gap reference placements plus invalid, repeat, guard,
-+  and input-immutability cases.
+@@ -27,19 +27,23 @@ same 25° rotation (five 5° Q/E steps).
+   per-puzzle dockable Parts Palette, compact simulation toolbar, timer/status, puzzle
+   selector, and Settings.
+   There is no separate Home screen.
++- **Gentle default:** fresh play hides timers, never times out, and exposes all
++  built-in puzzles while still recording completion. Parent Settings can
++  independently enable timer/timeout and sequential puzzle locking.
+ - **Polish feedback:** the persistent level/title/difficulty summary stays
+   visible in every mode. Selector state is visually and textually distinct, the
+   Parts Palette and controls wrap cleanly, and invalid placement or fixed-part edit
+   attempts show a concise live message without changing the board.
+ - **Puzzle selector:** a compact Play-screen selector opens a grouped panel for
+-  Basic, Medium, and Hard. It shows locked, available, and completed states
+-  plus a timed-puzzle indicator. Locked puzzles cannot be selected. Success
+-  offers Next Puzzle when another unlocked puzzle exists.
++  Basic, Medium, and Hard. Fresh play permits every built-in selection; when
++  parent puzzle locking is enabled, it shows locked, available, and completed
++  states and prevents locked selection. Success offers Next Puzzle when one is
++  available under the active parent setting.
+ - **Progression:** one global sequential order, such as Basic → Medium → Hard.
+   Difficulty is metadata/grouping only, not a separate progression system.
+-  Progress persists locally through `localStorage`; Settings can enable manual
+-  Unlock all puzzles. Disabling it keeps earned completion and restores normal
+-  selection rules.
++  Progress and parent options persist locally through `localStorage`. Parent
++  puzzle locking is off by default, so completion is recorded without blocking
++  selection; re-enabling it restores sequential rules without deleting progress.
+ - **Inventory:** each puzzle JSON defines its available parts and counts, which
+   supply the Play-screen Parts Palette. A global object library remains future
+   work and is separate from puzzle quantities.
+@@ -113,6 +117,12 @@ same 25° rotation (five 5° Q/E steps).
+   results with a max-tick guard. Vitest verifies the legacy two-ramp, Down the
+   Ramp, and Bridge the Gap reference placements plus invalid, repeat, guard,
+   and input-immutability cases.
++- **#27 — Gentle default + parent gate + wordless Play shell:** fresh play
++  hides timers, never times out, and exposes every built-in puzzle while still
++  recording completion. Persisted parent Settings can independently restore
++  timer/timeout and sequential-locking behavior. Play controls, Parts, puzzle
++  selection, Goal, and success use lightweight visual affordances while keeping
++  text and ARIA labels for accessibility.
  
  ## Current behavior
  
-@@ -163,20 +170,21 @@ same 25° rotation (five 5° Q/E steps).
- 
- ## Architecture
- 
--| Area                           | Responsibility                                                                                              |
--| ------------------------------ | ----------------------------------------------------------------------------------------------------------- |
--| `src/levels/`                  | Built-in puzzle catalog, level JSON metadata, ownership/inventory types, validation, and loading.           |
--| `src/state/`                   | Pure game-state and progression persistence, puzzle selection, timer, transforms, inventory, and snapshots. |
--| `src/game/PrototypeScene.ts`   | Phaser rendering, Matter bodies, player interactions, collision success, and full scene-layout snapshots.   |
--| `src/game/rampPlacement.ts`    | Bounds and penetration checks for editable rectangles.                                                      |
--| `src/game/doubleClick.ts`      | Pure completed-click and movement-tolerance logic.                                                          |
--| `src/game/contactRules.ts`     | Pure order-independent contact-rule matching and action execution.                                          |
--| `src/game/autonomousActors.ts` | Pure patrol state/velocity helpers and collision-enabled actor-body options.                                |
--| `src/game/simulationClock.ts`  | Fixed 60 Hz elapsed-time accumulator used by the scene-owned Matter loop.                                   |
--| `src/ui/Controls.ts`           | DOM buttons, tray counts, and enabled states.                                                               |
--| `src/main.ts`                  | Connects state, scene snapshots, controls, and Phaser setup.                                                |
--| `tests/`                       | Vitest unit coverage for state, placement, validation, ownership, puzzle data, and gestures.                |
--| `e2e/puzzle.e2e.ts`            | Playwright MVP coverage for solve, progression, inventory, timer, ownership, actors, and contacts.          |
-+| Area                             | Responsibility                                                                                              |
-+| -------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-+| `src/levels/`                    | Built-in puzzle catalog, level JSON metadata, ownership/inventory types, validation, and loading.           |
-+| `src/state/`                     | Pure game-state and progression persistence, puzzle selection, timer, transforms, inventory, and snapshots. |
-+| `src/game/PrototypeScene.ts`     | Phaser rendering, Matter bodies, player interactions, collision success, and full scene-layout snapshots.   |
-+| `src/game/rampPlacement.ts`      | Bounds and penetration checks for editable rectangles.                                                      |
-+| `src/game/doubleClick.ts`        | Pure completed-click and movement-tolerance logic.                                                          |
-+| `src/game/contactRules.ts`       | Pure order-independent contact-rule matching and action execution.                                          |
-+| `src/game/autonomousActors.ts`   | Pure patrol state/velocity helpers and collision-enabled actor-body options.                                |
-+| `src/game/simulationClock.ts`    | Fixed 60 Hz elapsed-time accumulator used by the scene-owned Matter loop.                                   |
-+| `src/game/headlessSimulation.ts` | Browser-independent fixed-step Matter runner for reference-solution verification.                           |
-+| `src/ui/Controls.ts`             | DOM buttons, tray counts, and enabled states.                                                               |
-+| `src/main.ts`                    | Connects state, scene snapshots, controls, and Phaser setup.                                                |
-+| `tests/`                         | Vitest unit coverage for state, placement, validation, ownership, puzzle data, and gestures.                |
-+| `e2e/puzzle.e2e.ts`              | Playwright MVP coverage for solve, progression, inventory, timer, ownership, actors, and contacts.          |
- 
- ## Automated validation
- 
+@@ -126,11 +136,10 @@ same 25° rotation (five 5° Q/E steps).
+   the live Ball physics transform rather than restoring its Edit layout.
+ - **Success:** goal contact pauses the simulation and locks Edit/Run. Rerun and
+   Reset remain available.
+-- **Timed puzzles:** an optional positive `timeLimitSeconds` starts counting
+-  down with Run, freezes in Pause, and resumes with Run. Success freezes the
+-  remaining time. Reaching zero first enters `Failed — Time expired`; Rerun and
+-  Reset remain available. Rerun restores the full time limit and Reset returns
+-  to Edit with the original limit. Untimed levels have no countdown.
++- **Timed puzzles:** parent timer/timeout mode is off by default, so configured
++  limits are hidden and do not advance or fail the puzzle. When enabled in
++  Settings, the existing countdown, Pause, Success, Timeout, Rerun, and Reset
++  behavior applies. Untimed levels have no countdown.
+ - **Rerun:** restores the specific layout, part set, transforms, and inventory
+   captured when Run was last started from Edit, then runs immediately.
+ - **Reset:** restores the original level JSON and initial JSON inventory.
 diff --git a/docs/ROADMAP.md b/docs/ROADMAP.md
-index a7a1870..0d6473c 100644
+index 0d6473c..8de462e 100644
 --- a/docs/ROADMAP.md
 +++ b/docs/ROADMAP.md
-@@ -95,7 +95,8 @@ detailed acceptance criteria, and design decisions.
+@@ -104,7 +104,8 @@ detailed acceptance criteria, and design decisions.
  
- ### #25 — Headless simulation runner
+ ### #27 — Gentle default + parent gate + wordless Play shell
  
--- Planned: verify level reference solutions deterministically without rendering.
-+- Completed: verifies level reference solutions deterministically without
-+  rendering through the shared bundled Matter engine.
+-- Planned: make child-facing Play gentle and wordless by default.
++- Completed: fresh play is gentle and wordless, with optional persisted parent
++  timer/timeout and sequential-locking controls.
  
- ### #26 — Contact Actions v2
+ ### #28 — Dynamic/toppling Block capability
  
+diff --git a/e2e/puzzle.e2e.ts b/e2e/puzzle.e2e.ts
+index bc30f65..e131e25 100644
+--- a/e2e/puzzle.e2e.ts
++++ b/e2e/puzzle.e2e.ts
+@@ -516,10 +516,22 @@ async function selectPuzzle(page: Page, puzzleId: string): Promise<void> {
+ }
+ 
+ async function enableUnlockAll(page: Page): Promise<void> {
+-  await page.getByRole("button", { name: "Settings" }).click();
++  const settings = page.locator("#settings-panel");
++  if (!(await settings.isVisible())) {
++    await page.getByRole("button", { name: "Settings" }).click();
++  }
++  await page.getByLabel("Puzzle locking").check();
+   await page.getByLabel("Unlock all puzzles").check();
+ }
+ 
++async function enableTimerFailureMode(page: Page): Promise<void> {
++  const settings = page.locator("#settings-panel");
++  if (!(await settings.isVisible())) {
++    await page.getByRole("button", { name: "Settings" }).click();
++  }
++  await page.getByLabel("Timers and timeout").check();
++}
++
+ function getRamp(board: BoardState, id: string): ActualRampTransform {
+   const ramp = board.ramps.find((candidate) => candidate.id === id);
+   if (!ramp) throw new Error(`Missing ${id}.`);
+@@ -587,7 +599,7 @@ test("solves the first puzzle and advances through Next Puzzle", async ({
+     "Relay Ramps · Basic · Level 1",
+   );
+   await expect(page.locator("#puzzle-title-label")).toHaveText("Relay Ramps");
+-  await expect(app.timer).toHaveText("Time: 0:45");
++  await expect(app.timer).toBeHidden();
+ 
+   await solveFirstPuzzle(app);
+   await expect(app.simulation).toBeDisabled();
+@@ -683,7 +695,7 @@ test("hides and restores the Parts Palette across responsive layouts", async ({
+   const rampPreview = page.locator(".part-preview--ramp");
+   const toggle = page.locator("#parts-palette-toggle");
+ 
+-  await expect(toggle).toHaveText("Parts");
++  await expect(toggle).toContainText("Parts");
+   await expect(palette).toBeHidden();
+   await expect(paletteTitle).toBeHidden();
+   await expect(paletteContent).toBeHidden();
+@@ -694,7 +706,7 @@ test("hides and restores the Parts Palette across responsive layouts", async ({
+   await expect(blockPreview).toBeVisible();
+   await expect(rampPreview).toBeVisible();
+   await toggle.click();
+-  await expect(toggle).toHaveText("Parts");
++  await expect(toggle).toContainText("Parts");
+   await expect(palette).toBeHidden();
+ 
+   await page.setViewportSize({ width: 600, height: 900 });
+@@ -703,13 +715,13 @@ test("hides and restores the Parts Palette across responsive layouts", async ({
+   await expect(paletteTitle).toBeHidden();
+   await expect(paletteContent).toBeHidden();
+   await toggle.click();
+-  await expect(toggle).toHaveText("Close");
++  await expect(toggle).toContainText("Close");
+   await expect(palette).toBeVisible();
+   await expect(ballPreview).toBeVisible();
+   await expect(blockPreview).toBeVisible();
+   await expect(rampPreview).toBeVisible();
+   await toggle.click();
+-  await expect(toggle).toHaveText("Parts");
++  await expect(toggle).toContainText("Parts");
+   await expect(palette).toBeHidden();
+   expectNoConsoleErrors(app);
+ });
+@@ -739,12 +751,58 @@ test("Rerun restores its run-start layout and Reset restores JSON defaults", asy
+   expectNoConsoleErrors(app);
+ });
+ 
++test("uses gentle defaults and exposes parent options without text-dependent Play actions", async ({
++  page,
++}) => {
++  const app = await startApp(page);
++  await page.locator("#puzzle-selector-button").click();
++  await expect(
++    page.locator('[data-puzzle-id="timed-relay-003"]'),
++  ).toBeEnabled();
++  await expect(
++    page.locator('[data-puzzle-id="bridge-the-gap-005"]'),
++  ).toBeEnabled();
++  await expect(page.locator(".puzzle-option:disabled")).toHaveCount(0);
++  await page.locator('[data-puzzle-id="timed-relay-003"]').click();
++  await expect(app.timer).toBeHidden();
++
++  await expect(page.locator("#simulation-button .control-icon")).toHaveText(
++    "▶",
++  );
++  await expect(page.locator("#rerun-button .control-icon")).toHaveText("↻");
++  await expect(page.locator("#reset-button .control-icon")).toHaveText("↺");
++  await expect(page.locator("#parts-palette-toggle .control-icon")).toHaveText(
++    "▣",
++  );
++  await page.locator("#parts-palette-toggle").click();
++  await expect(page.locator(".part-preview--ramp")).toBeVisible();
++
++  await app.simulation.click();
++  await advanceSimulation(page, 31_000);
++  await expect(app.mode).toHaveText("Mode: Running");
++
++  const settings = page.locator("#settings-panel");
++  await page.getByRole("button", { name: "Settings" }).click();
++  await expect(page.getByLabel("Timers and timeout")).not.toBeChecked();
++  await expect(page.getByLabel("Puzzle locking")).not.toBeChecked();
++  await page.getByLabel("Timers and timeout").check();
++  await expect(app.timer).toHaveText("Time: 0:30");
++  await page.getByLabel("Puzzle locking").check();
++  await page.reload({ waitUntil: "domcontentloaded" });
++  await waitForPrototypeScene(page);
++  await page.getByRole("button", { name: "Settings" }).click();
++  await expect(page.getByLabel("Timers and timeout")).toBeChecked();
++  await expect(page.getByLabel("Puzzle locking")).toBeChecked();
++  await expect(settings).toBeVisible();
++  expectNoConsoleErrors(app);
++});
++
+ test("times a puzzle through Run, Pause, Resume, Rerun, and Timeout", async ({
+   page,
+ }) => {
+   const app = await startApp(page);
+-  await enableUnlockAll(page);
+   await selectPuzzle(page, "timed-relay-003");
++  await enableTimerFailureMode(page);
+   await expect(page.locator("#puzzle-title-label")).toHaveText("Timed Relay");
+   await expect(app.timer).toHaveText("Time: 0:30");
+ 
+@@ -776,7 +834,7 @@ test("loads the first real Basic puzzle pair with their defined timers and inven
+   page,
+ }) => {
+   const app = await startApp(page);
+-  await enableUnlockAll(page);
++  await enableTimerFailureMode(page);
+ 
+   await selectPuzzle(page, "down-the-ramp-004");
+   await expect(page.locator("#puzzle-selector-button")).toHaveText(
+@@ -825,6 +883,8 @@ test("enforces puzzle locks and isolates switched runtime state", async ({
+   page,
+ }) => {
+   const app = await startApp(page);
++  await page.getByRole("button", { name: "Settings" }).click();
++  await page.getByLabel("Puzzle locking").check();
+   await page.locator("#puzzle-selector-button").click();
+   await expect(
+     page.locator('[data-puzzle-id="relay-shift-002"]'),
+@@ -1378,6 +1438,7 @@ test("keeps the live Ball transform through Pause, Success, and Timeout", async
+   );
+ 
+   await enableUnlockAll(page);
++  await enableTimerFailureMode(page);
+   await selectPuzzle(page, "timed-relay-003");
+   await app.simulation.click();
+   const timeoutTransition = await page.evaluate(() => {
+diff --git a/index.html b/index.html
+index 802d710..e0cd5dc 100644
+--- a/index.html
++++ b/index.html
+@@ -51,7 +51,7 @@
+             aria-controls="parts-palette-content"
+             aria-expanded="false"
+           >
+-            Parts
++            <span class="control-icon" aria-hidden="true">▣</span> Parts
+           </button>
+         </div>
+       </section>
+@@ -69,6 +69,15 @@
+         aria-label="Settings"
+         hidden
+       >
++        <p class="settings-heading">Parent options</p>
++        <label>
++          <input id="timer-failure-checkbox" type="checkbox" />
++          Timers and timeout
++        </label>
++        <label>
++          <input id="puzzle-locking-checkbox" type="checkbox" />
++          Puzzle locking
++        </label>
+         <label>
+           <input id="unlock-all-checkbox" type="checkbox" />
+           Unlock all puzzles
+@@ -132,16 +141,28 @@
+       </section>
+       <p id="edit-feedback" class="edit-feedback" aria-live="polite" hidden></p>
+       <nav class="controls simulation-toolbar" aria-label="Simulation controls">
+-        <button id="edit-button" type="button">Edit</button>
+-        <button id="simulation-button" type="button">Run</button>
+-        <button id="rerun-button" type="button" disabled>Rerun</button>
+-        <button id="reset-button" type="button">Reset</button>
++        <button id="edit-button" type="button">
++          <span class="control-icon" aria-hidden="true">✋</span> Edit
++        </button>
++        <button id="simulation-button" type="button">
++          <span class="control-icon" aria-hidden="true">▶</span> Run
++        </button>
++        <button id="rerun-button" type="button" disabled>
++          <span class="control-icon" aria-hidden="true">↻</span> Rerun
++        </button>
++        <button id="reset-button" type="button">
++          <span class="control-icon" aria-hidden="true">↺</span> Reset
++        </button>
+         <button id="next-puzzle-button" type="button" hidden>
+           Next Puzzle
+         </button>
+       </nav>
+-      <p class="hint">
+-        Use both brass ramps to guide the ball into the striped goal.
++      <p
++        class="hint"
++        aria-label="Guide the ball to the goal"
++        aria-hidden="true"
++      >
++        ● → ★
+       </p>
+     </main>
+     <script type="module" src="/src/main.ts"></script>
 diff --git a/src/game/PrototypeScene.ts b/src/game/PrototypeScene.ts
-index 93c2323..7b37cbc 100644
+index 7b37cbc..0aef439 100644
 --- a/src/game/PrototypeScene.ts
 +++ b/src/game/PrototypeScene.ts
-@@ -6,7 +6,12 @@ import {
-   resolvePatrolDirection,
-   type PatrolState,
- } from "./autonomousActors";
--import { executeContactRules } from "./contactRules";
-+import {
-+  addContactVectors,
-+  executeContactRules,
-+  redirectVelocity,
-+  type ContactParticipant,
-+} from "./contactRules";
- import {
-   isClickMovementWithinTolerance,
-   recordCompletedClick,
-@@ -126,8 +131,9 @@ interface EditableComponent {
- }
- 
- interface ContactObject {
-+  id: string;
-   tag: ContactTag;
--  destroy: () => void;
-+  destroyVisual: () => void;
- }
- 
- type MatterRectangle = Phaser.GameObjects.Rectangle &
-@@ -664,7 +670,7 @@ export class PrototypeScene extends Phaser.Scene {
-     };
-     this.balls.set(definition.id, ball);
-     this.editableComponents.set(definition.id, ball);
--    this.registerContactObject(shape, "ball", () =>
-+    this.registerContactObject(shape, "ball", definition.id, () =>
-       this.destroyBall(definition.id),
+@@ -727,7 +727,7 @@ export class PrototypeScene extends Phaser.Scene {
      );
-   }
-@@ -704,7 +710,9 @@ export class PrototypeScene extends Phaser.Scene {
-       )
-       .setDepth(2);
-     this.matter.add.gameObject(floorShape, { isStatic: true, label: "floor" });
--    this.registerContactObject(floorShape, "floor", () => floorShape.destroy());
-+    this.registerContactObject(floorShape, "floor", "floor", () =>
-+      floorShape.destroy(),
-+    );
- 
-     const goalShape = this.add
-       .rectangle(goal.x, goal.y, goal.width, goal.height, 0x5dbb35, 0)
-@@ -714,7 +722,9 @@ export class PrototypeScene extends Phaser.Scene {
-       isSensor: true,
-       label: GOAL_LABEL,
-     });
--    this.registerContactObject(goalShape, "goal", () => goalShape.destroy());
-+    this.registerContactObject(goalShape, "goal", "goal", () =>
-+      goalShape.destroy(),
-+    );
      this.drawGoalCup(goal);
      this.add
-       .text(goal.x, goal.y + 8, "GOAL", {
-@@ -815,7 +825,7 @@ export class PrototypeScene extends Phaser.Scene {
-     this.updateRampSurface(ramp, definition, definition.rotation);
-     this.ramps.set(definition.id, ramp);
-     this.editableComponents.set(definition.id, ramp);
--    this.registerContactObject(shape, "ramp", () =>
-+    this.registerContactObject(shape, "ramp", definition.id, () =>
-       this.destroyRampFromContact(definition.id),
-     );
-   }
-@@ -909,7 +919,7 @@ export class PrototypeScene extends Phaser.Scene {
-     this.updateBlockSurface(block, definition);
-     this.blocks.set(definition.id, block);
-     this.editableComponents.set(definition.id, block);
--    this.registerContactObject(shape, "block", () =>
-+    this.registerContactObject(shape, "block", definition.id, () =>
-       this.destroyBlockFromContact(definition.id),
-     );
-   }
-@@ -1156,7 +1166,7 @@ export class PrototypeScene extends Phaser.Scene {
-     };
-     this.actors.set(definition.id, actor);
-     this.editableComponents.set(definition.id, actor);
--    this.registerContactObject(shape, definition.tag, () =>
-+    this.registerContactObject(shape, definition.tag, definition.id, () =>
-       this.destroyActorFromContact(definition.id),
-     );
-   }
-@@ -1208,8 +1218,8 @@ export class PrototypeScene extends Phaser.Scene {
- 
-     executeContactRules(
-       this.level.contactRules,
--      { ...first, destroy: () => this.destroyContactObject(bodyA) },
--      { ...second, destroy: () => this.destroyContactObject(bodyB) },
-+      this.toContactParticipant(first, bodyA),
-+      this.toContactParticipant(second, bodyB),
-     );
-     if (
-       (first.tag === "ball" && second.tag === "goal") ||
-@@ -1224,18 +1234,39 @@ export class PrototypeScene extends Phaser.Scene {
-     const contactObject = this.contactObjects.get(body);
-     if (!contactObject) return;
-     this.contactObjects.delete(body);
--    contactObject.destroy();
-+    contactObject.destroyVisual();
-+  }
-+
-+  private toContactParticipant(
-+    contactObject: Readonly<ContactObject>,
-+    body: MatterJS.BodyType,
-+  ): ContactParticipant {
-+    return {
-+      id: contactObject.id,
-+      tag: contactObject.tag,
-+      destroy: () => this.destroyContactObject(body),
-+      applyImpulse: (impulse) => {
-+        const velocity = addContactVectors(body.velocity, impulse);
-+        this.matter.body.setVelocity(body, velocity);
-+      },
-+      redirect: (direction) => {
-+        const velocity = redirectVelocity(body.velocity, direction);
-+        if (velocity) this.matter.body.setVelocity(body, velocity);
-+      },
-+    };
-   }
- 
-   private registerContactObject(
-     gameObject: MatterGameObject,
-     tag: ContactTag,
--    destroy: () => void,
-+    id: string,
-+    destroyVisual: () => void,
-   ): void {
-     if (gameObject.body) {
-       this.contactObjects.set(gameObject.body as MatterJS.BodyType, {
-+        id,
-         tag,
--        destroy,
-+        destroyVisual,
-       });
-     }
-   }
-diff --git a/src/game/contactRules.ts b/src/game/contactRules.ts
-index f5fc120..fa8796c 100644
---- a/src/game/contactRules.ts
-+++ b/src/game/contactRules.ts
-@@ -1,32 +1,116 @@
--import type { ContactRule, ContactTag } from "../levels/levelTypes";
-+import type {
-+  ContactAction,
-+  ContactCondition,
-+  ContactParticipantSelector,
-+  ContactRule,
-+} from "../levels/levelTypes";
- 
-+export interface ContactVector {
-+  x: number;
-+  y: number;
-+}
-+
-+export function addContactVectors(
-+  velocity: Readonly<ContactVector>,
-+  impulse: Readonly<ContactVector>,
-+): ContactVector {
-+  return { x: velocity.x + impulse.x, y: velocity.y + impulse.y };
-+}
-+
-+/** Redirect preserves the current scalar speed; a stationary participant stays still. */
-+export function redirectVelocity(
-+  velocity: Readonly<ContactVector>,
-+  direction: Readonly<ContactVector>,
-+): ContactVector | undefined {
-+  const speed = Math.hypot(velocity.x, velocity.y);
-+  const directionLength = Math.hypot(direction.x, direction.y);
-+  if (speed === 0 || directionLength === 0) return undefined;
-+  return {
-+    x: (direction.x / directionLength) * speed,
-+    y: (direction.y / directionLength) * speed,
-+  };
-+}
-+
-+/**
-+ * Runtime adapters register an identity, tag, and only the capabilities their
-+ * object supports. The rule executor deliberately has no object-type logic.
-+ */
- export interface ContactParticipant {
--  tag: ContactTag;
-+  id: string;
-+  tag: string;
-   destroy: () => void;
-+  applyImpulse?: (impulse: Readonly<ContactVector>) => void;
-+  redirect?: (direction: Readonly<ContactVector>) => void;
- }
- 
--function ruleMatches(
--  rule: Readonly<ContactRule>,
--  firstTag: ContactTag,
--  secondTag: ContactTag,
--): boolean {
--  const [firstRuleTag, secondRuleTag] = rule.contacts;
--  return (
--    (firstRuleTag === firstTag && secondRuleTag === secondTag) ||
--    (firstRuleTag === secondTag && secondRuleTag === firstTag)
--  );
-+interface MatchedContact {
-+  participants: readonly [ContactParticipant, ContactParticipant];
- }
- 
--function getTarget(
-+function matchRule(
-   rule: Readonly<ContactRule>,
-   first: ContactParticipant,
-   second: ContactParticipant,
--): ContactParticipant | undefined {
--  if (first.tag === rule.action.target) return first;
--  if (second.tag === rule.action.target) return second;
-+): MatchedContact | undefined {
-+  const [firstTag, secondTag] = rule.contacts;
-+  if (firstTag === secondTag) {
-+    return first.tag === firstTag && second.tag === secondTag
-+      ? { participants: [first, second] }
-+      : undefined;
-+  }
-+  if (first.tag === firstTag && second.tag === secondTag) {
-+    return { participants: [first, second] };
-+  }
-+  if (first.tag === secondTag && second.tag === firstTag) {
-+    return { participants: [second, first] };
-+  }
-   return undefined;
- }
- 
-+function selectParticipant(
-+  selector: Readonly<ContactParticipantSelector>,
-+  contact: Readonly<MatchedContact>,
-+): ContactParticipant | undefined {
-+  if (selector.type === "contact") return contact.participants[selector.index];
-+  return contact.participants.find(
-+    (participant) => participant.id === selector.id,
-+  );
-+}
-+
-+function getActionTarget(
-+  action: Readonly<ContactAction>,
-+  contact: Readonly<MatchedContact>,
-+): ContactParticipant | undefined {
-+  if (typeof action.target !== "string") {
-+    return selectParticipant(action.target, contact);
-+  }
-+  return contact.participants.find(
-+    (participant) => participant.tag === action.target,
-+  );
-+}
-+
-+function conditionMatches(
-+  condition: Readonly<ContactCondition>,
-+  contact: Readonly<MatchedContact>,
-+): boolean {
-+  switch (condition.type) {
-+    case "participant-id":
-+      return (
-+        selectParticipant(condition.target, contact)?.id === condition.equals
-+      );
-+  }
-+}
-+
-+function conditionsMatch(
-+  conditions: readonly ContactCondition[] | undefined,
-+  contact: Readonly<MatchedContact>,
-+): boolean {
-+  return (
-+    conditions?.every((condition) => conditionMatches(condition, contact)) ??
-+    true
-+  );
-+}
-+
- export function executeContactRules(
-   rules: ReadonlyArray<Readonly<ContactRule>>,
-   first: ContactParticipant,
-@@ -34,10 +118,22 @@ export function executeContactRules(
- ): void {
-   const destroyed = new Set<ContactParticipant>();
-   for (const rule of rules) {
--    if (!ruleMatches(rule, first.tag, second.tag)) continue;
--    const target = getTarget(rule, first, second);
-+    const contact = matchRule(rule, first, second);
-+    if (!contact || !conditionsMatch(rule.conditions, contact)) continue;
-+    const target = getActionTarget(rule.action, contact);
-     if (!target || destroyed.has(target)) continue;
--    destroyed.add(target);
--    target.destroy();
-+
-+    switch (rule.action.type) {
-+      case "destroy":
-+        destroyed.add(target);
-+        target.destroy();
-+        break;
-+      case "impulse":
-+        target.applyImpulse?.(rule.action.impulse);
-+        break;
-+      case "redirect":
-+        target.redirect?.(rule.action.direction);
-+        break;
-+    }
-   }
- }
-diff --git a/src/levels/levelTypes.ts b/src/levels/levelTypes.ts
-index bd293b4..54d3996 100644
---- a/src/levels/levelTypes.ts
-+++ b/src/levels/levelTypes.ts
-@@ -49,14 +49,54 @@ export const CONTACT_TAGS = [
- 
- export type ContactTag = (typeof CONTACT_TAGS)[number];
- 
-+export interface ContactParticipantByRole {
-+  type: "contact";
-+  index: 0 | 1;
-+}
-+
-+export interface ContactParticipantById {
-+  type: "id";
-+  id: string;
-+}
-+
-+export type ContactParticipantSelector =
-+  ContactParticipantByRole | ContactParticipantById;
-+
-+/** A legacy tag target is retained for existing destroy-rule JSON. */
-+export type ContactActionTarget = ContactTag | ContactParticipantSelector;
-+
- export interface DestroyContactAction {
-   type: "destroy";
--  target: ContactTag;
-+  target: ContactActionTarget;
- }
- 
-+export interface ImpulseContactAction {
-+  type: "impulse";
-+  target: ContactParticipantSelector;
-+  impulse: Point;
-+}
-+
-+export interface RedirectContactAction {
-+  type: "redirect";
-+  target: ContactParticipantSelector;
-+  direction: Point;
-+}
-+
-+export type ContactAction =
-+  DestroyContactAction | ImpulseContactAction | RedirectContactAction;
-+
-+export interface ParticipantIdContactCondition {
-+  type: "participant-id";
-+  target: ContactParticipantSelector;
-+  equals: string;
-+}
-+
-+export type ContactCondition = ParticipantIdContactCondition;
-+
- export interface ContactRule {
-   contacts: [ContactTag, ContactTag];
--  action: DestroyContactAction;
-+  conditions?: ContactCondition[];
-+  action: ContactAction;
- }
- 
- export type ActorTag = "bird";
-diff --git a/src/levels/validateLevel.ts b/src/levels/validateLevel.ts
-index 646653a..756ceee 100644
---- a/src/levels/validateLevel.ts
-+++ b/src/levels/validateLevel.ts
-@@ -2,6 +2,10 @@ import type {
-   ActorDefinition,
-   BallDefinition,
-   BlockDefinition,
-+  ContactAction,
-+  ContactActionTarget,
-+  ContactCondition,
-+  ContactParticipantSelector,
-   ContactRule,
-   ContactTag,
-   InventoryDefinition,
-@@ -157,6 +161,87 @@ function validateActors(value: unknown): ActorDefinition[] {
- const isContactTag = (value: unknown): value is ContactTag =>
-   typeof value === "string" && CONTACT_TAGS.includes(value as ContactTag);
- 
-+function validateContactParticipantSelector(
-+  value: unknown,
-+): ContactParticipantSelector | undefined {
-+  if (!isRecord(value)) return undefined;
-+  if (value.type === "contact" && (value.index === 0 || value.index === 1)) {
-+    return { type: "contact", index: value.index };
-+  }
-+  if (
-+    value.type === "id" &&
-+    typeof value.id === "string" &&
-+    value.id.trim() !== ""
-+  ) {
-+    return { type: "id", id: value.id };
-+  }
-+  return undefined;
-+}
-+
-+function validateContactActionTarget(
-+  value: unknown,
-+  contacts: readonly [ContactTag, ContactTag],
-+): ContactActionTarget | undefined {
-+  if (isContactTag(value)) {
-+    return contacts[0] !== contacts[1] && contacts.includes(value)
-+      ? value
-+      : undefined;
-+  }
-+  return validateContactParticipantSelector(value);
-+}
-+
-+function validateContactConditions(
-+  value: unknown,
-+): ContactCondition[] | undefined {
-+  if (value === undefined) return [];
-+  if (!Array.isArray(value)) return undefined;
-+  const conditions: ContactCondition[] = [];
-+  for (const condition of value) {
-+    if (!isRecord(condition) || condition.type !== "participant-id") {
-+      return undefined;
-+    }
-+    const target = validateContactParticipantSelector(condition.target);
-+    if (
-+      !target ||
-+      typeof condition.equals !== "string" ||
-+      condition.equals.trim() === ""
-+    ) {
-+      return undefined;
-+    }
-+    conditions.push({
-+      type: "participant-id",
-+      target,
-+      equals: condition.equals,
-+    });
-+  }
-+  return conditions;
-+}
-+
-+function validateContactAction(
-+  value: unknown,
-+  contacts: readonly [ContactTag, ContactTag],
-+): ContactAction | undefined {
-+  if (!isRecord(value)) return undefined;
-+  const target = validateContactActionTarget(value.target, contacts);
-+  if (!target) return undefined;
-+  if (value.type === "destroy") {
-+    return { type: "destroy", target };
-+  }
-+  const selector = validateContactParticipantSelector(value.target);
-+  if (!selector) return undefined;
-+  if (value.type === "impulse" && isPoint(value.impulse)) {
-+    return { type: "impulse", target: selector, impulse: value.impulse };
-+  }
-+  if (
-+    value.type === "redirect" &&
-+    isPoint(value.direction) &&
-+    (value.direction.x !== 0 || value.direction.y !== 0)
-+  ) {
-+    return { type: "redirect", target: selector, direction: value.direction };
-+  }
-+  return undefined;
-+}
-+
- function validateContactRules(value: unknown): ContactRule[] {
-   if (!Array.isArray(value)) {
-     throw new Error("Level contactRules must be an array.");
-@@ -169,31 +254,48 @@ function validateContactRules(value: unknown): ContactRule[] {
-     if (
-       rule.contacts.length !== 2 ||
-       !isContactTag(firstTag) ||
--      !isContactTag(secondTag) ||
--      firstTag === secondTag
-+      !isContactTag(secondTag)
-+    ) {
-+      throw new Error(
-+        `Level contact rule ${index} must name two known contact tags.`,
-+      );
-+    }
-+    const contacts: [ContactTag, ContactTag] = [firstTag, secondTag];
-+    if (
-+      isRecord(rule.action) &&
-+      rule.action.type === "destroy" &&
-+      isContactTag(rule.action.target) &&
-+      !contacts.includes(rule.action.target)
-     ) {
-       throw new Error(
--        `Level contact rule ${index} must name two different known contact tags.`,
-+        `Level contact rule ${index} must destroy one of its contact tags.`,
-       );
-     }
--    if (!isRecord(rule.action) || rule.action.type !== "destroy") {
-+    const action = validateContactAction(rule.action, contacts);
-+    if (!action) {
-       throw new Error(
-         `Level contact rule ${index} has an unknown or invalid action.`,
-       );
-     }
--    if (!isContactTag(rule.action.target)) {
-+    if (
-+      action.type === "destroy" &&
-+      typeof action.target === "string" &&
-+      !contacts.includes(action.target)
-+    ) {
-       throw new Error(
--        `Level contact rule ${index} has an unknown destroy target tag.`,
-+        `Level contact rule ${index} must destroy one of its contact tags.`,
-       );
-     }
--    if (rule.action.target !== firstTag && rule.action.target !== secondTag) {
-+    const conditions = validateContactConditions(rule.conditions);
-+    if (!conditions) {
-       throw new Error(
--        `Level contact rule ${index} must destroy one of its contact tags.`,
-+        `Level contact rule ${index} has an unknown or invalid condition.`,
-       );
-     }
-     return {
--      contacts: [firstTag, secondTag],
--      action: { type: "destroy", target: rule.action.target },
-+      contacts,
-+      ...(conditions.length === 0 ? {} : { conditions }),
-+      action,
-     };
-   });
- }
-diff --git a/tests/contactRules.test.ts b/tests/contactRules.test.ts
-index c557e97..553b7eb 100644
---- a/tests/contactRules.test.ts
-+++ b/tests/contactRules.test.ts
-@@ -1,20 +1,43 @@
- import { describe, expect, it } from "vitest";
--import { executeContactRules } from "../src/game/contactRules";
+-      .text(goal.x, goal.y + 8, "GOAL", {
++      .text(goal.x, goal.y + 8, "★", {
+         color: "#1e4b24",
+         fontFamily: "Arial, sans-serif",
+         fontSize: "18px",
+diff --git a/src/main.ts b/src/main.ts
+index 62ecda4..b1bbdee 100644
+--- a/src/main.ts
++++ b/src/main.ts
+@@ -21,6 +21,12 @@ import {
+   type PuzzleRuntime,
+   type StorageAdapter,
+ } from "./state/progression";
 +import {
-+  addContactVectors,
-+  executeContactRules,
-+  redirectVelocity,
-+} from "../src/game/contactRules";
- import type { ContactParticipant } from "../src/game/contactRules";
- import type { ContactRule } from "../src/levels/levelTypes";
++  loadParentSettings,
++  saveParentSettings,
++  setParentSetting,
++  type ParentSettings,
++} from "./state/parentSettings";
+ import {
+   transitionGameState,
+   type GameAction,
+@@ -41,6 +47,7 @@ function getLocalStorage(): StorageAdapter | undefined {
  
--function participant(tag: ContactParticipant["tag"]): ContactParticipant & {
--  wasDestroyed: () => boolean;
-+function participant(
-+  id: string,
-+  tag: ContactParticipant["tag"],
-+  velocity = { x: 0, y: 0 },
-+): ContactParticipant & {
-   destroyCount: () => number;
-+  effects: () => readonly string[];
-+  velocity: () => { x: number; y: number };
- } {
--  let count = 0;
-+  let destroyCount = 0;
-+  let currentVelocity = velocity;
-+  const effectLog: string[] = [];
-   return {
-+    id,
-     tag,
-     destroy: () => {
--      count += 1;
-+      destroyCount += 1;
-+      effectLog.push("destroy");
-     },
--    wasDestroyed: () => count > 0,
--    destroyCount: () => count,
-+    applyImpulse: (impulse) => {
-+      currentVelocity = addContactVectors(currentVelocity, impulse);
-+      effectLog.push(`impulse:${impulse.x},${impulse.y}`);
-+    },
-+    redirect: (direction) => {
-+      currentVelocity =
-+        redirectVelocity(currentVelocity, direction) ?? currentVelocity;
-+      effectLog.push(`redirect:${direction.x},${direction.y}`);
-+    },
-+    destroyCount: () => destroyCount,
-+    effects: () => effectLog,
-+    velocity: () => currentVelocity,
+ const storage = getLocalStorage();
+ let progression: ProgressionState = loadProgression(storage, builtInPuzzles);
++let parentSettings: ParentSettings = loadParentSettings(storage);
+ let activePuzzle = builtInPuzzles[0]!;
+ let runtime: PuzzleRuntime = createPuzzleRuntime(activePuzzle);
+ let state: GameState = runtime.gameState;
+@@ -65,6 +72,7 @@ const controls = new Controls(
+   handleAction,
+   selectPuzzle,
+   updateUnlockAll,
++  updateParentSetting,
+   loadNextPuzzle,
+ );
+ 
+@@ -76,10 +84,16 @@ function getPlayScreenView(): PlayScreenView {
+       activePuzzle.id,
+       builtInPuzzles,
+       progression,
++      parentSettings.puzzleLocking,
++    ),
++    puzzleProgress: getPuzzleProgress(
++      builtInPuzzles,
++      progression,
++      parentSettings.puzzleLocking,
+     ),
+-    puzzleProgress: getPuzzleProgress(builtInPuzzles, progression),
+     totalBuiltInPuzzles: builtInPuzzles.length,
+     unlockAll: progression.unlockAll,
++    parentSettings,
    };
  }
  
-@@ -24,58 +47,180 @@ describe("contact rules", () => {
-     action: { type: "destroy", target: "block" },
-   };
+@@ -121,10 +135,14 @@ function handleAction(action: GameAction): void {
+     action = { ...action, componentId };
+   }
+   if (typeof action === "object" && action.type === "advance-time") {
++    action = {
++      ...action,
++      enforceTimer: parentSettings.timerFailureMode,
++    };
+     const previousMode = state.mode;
+     replaceGameState(transitionGameState(state, action));
+     if (state.mode !== previousMode) applyState();
+-    else controls.renderTimer(state);
++    else controls.renderTimer(state, parentSettings.timerFailureMode);
+     return;
+   }
+   if (action === "toggle-simulation" && state.mode === "edit") {
+@@ -148,12 +166,21 @@ function handleAction(action: GameAction): void {
  
--  it("destroys the configured target regardless of collision order", () => {
--    const ball = participant("ball");
--    const block = participant("block");
-+  it("preserves destroy behavior regardless of collision order", () => {
-+    const ball = participant("ball-1", "ball");
-+    const block = participant("block-1", "block");
-     executeContactRules([destroyBlock], ball, block);
--    expect(ball.wasDestroyed()).toBe(false);
--    expect(block.wasDestroyed()).toBe(true);
-+    expect(ball.destroyCount()).toBe(0);
-+    expect(block.destroyCount()).toBe(1);
+ function selectPuzzle(puzzleId: string): void {
+   if (puzzleId === activePuzzle.id) return;
+-  if (!canSelectPuzzle(puzzleId, builtInPuzzles, progression)) return;
++  if (
++    !canSelectPuzzle(
++      puzzleId,
++      builtInPuzzles,
++      progression,
++      parentSettings.puzzleLocking,
++    )
++  )
++    return;
+   const nextRuntime = switchPuzzle(
+     runtime,
+     puzzleId,
+     builtInPuzzles,
+     progression,
++    parentSettings.puzzleLocking,
+   );
+   const nextPuzzle = getBuiltInPuzzle(nextRuntime.puzzleId);
+   if (!nextPuzzle) return;
+@@ -173,11 +200,18 @@ function updateUnlockAll(unlockAll: boolean): void {
+   controls.render(state, getPlayScreenView());
+ }
  
--    const reversedBall = participant("ball");
--    const reversedBlock = participant("block");
-+    const reversedBall = participant("ball-1", "ball");
-+    const reversedBlock = participant("block-1", "block");
-     executeContactRules([destroyBlock], reversedBlock, reversedBall);
--    expect(reversedBall.wasDestroyed()).toBe(false);
--    expect(reversedBlock.wasDestroyed()).toBe(true);
-+    expect(reversedBall.destroyCount()).toBe(0);
-+    expect(reversedBlock.destroyCount()).toBe(1);
-   });
- 
--  it("does not act on unrelated contacts or destroy the same target twice", () => {
--    const ball = participant("ball");
--    const ramp = participant("ramp");
-+  it("does nothing for unrelated contacts and destroys a target only once", () => {
-+    const ball = participant("ball-1", "ball");
-+    const ramp = participant("ramp-1", "ramp");
-     executeContactRules([destroyBlock], ball, ramp);
--    expect(ball.wasDestroyed()).toBe(false);
--    expect(ramp.wasDestroyed()).toBe(false);
-+    expect(ball.destroyCount()).toBe(0);
-+    expect(ramp.destroyCount()).toBe(0);
- 
--    const target = participant("block");
--    executeContactRules([destroyBlock, destroyBlock], ball, target);
--    expect(target.wasDestroyed()).toBe(true);
--    expect(target.destroyCount()).toBe(1);
-+    const block = participant("block-1", "block");
-+    executeContactRules([destroyBlock, destroyBlock], ball, block);
-+    expect(block.destroyCount()).toBe(1);
-   });
- 
--  it("executes the bird-to-block destroy rule after their physical contact", () => {
--    const bird = participant("bird");
--    const block = participant("block");
--    const destroyBirdBlock: ContactRule = {
--      contacts: ["bird", "block"],
--      action: { type: "destroy", target: "block" },
-+  it("does not execute later actions for an already-destroyed participant", () => {
-+    const ball = participant("ball-1", "ball", { x: 1, y: 0 });
-+    const block = participant("block-1", "block");
-+    const rules: ContactRule[] = [
-+      {
-+        contacts: ["ball", "block"],
-+        action: { type: "destroy", target: { type: "contact", index: 0 } },
-+      },
-+      {
-+        contacts: ["ball", "block"],
-+        action: {
-+          type: "impulse",
-+          target: { type: "contact", index: 0 },
-+          impulse: { x: 5, y: 0 },
-+        },
-+      },
-+    ];
++function updateParentSetting(key: keyof ParentSettings, value: boolean): void {
++  parentSettings = setParentSetting(parentSettings, key, value);
++  saveParentSettings(storage, parentSettings);
++  controls.render(state, getPlayScreenView());
++}
 +
-+    executeContactRules(rules, ball, block);
-+    expect(ball.destroyCount()).toBe(1);
-+    expect(ball.effects()).toEqual(["destroy"]);
-+    expect(ball.velocity()).toEqual({ x: 1, y: 0 });
-+  });
-+
-+  it("applies a declared impulse to the selected contact role", () => {
-+    const ball = participant("ball-1", "ball", { x: 2, y: -1 });
-+    const block = participant("block-1", "block");
-+    const rule: ContactRule = {
-+      contacts: ["ball", "block"],
-+      action: {
-+        type: "impulse",
-+        target: { type: "contact", index: 0 },
-+        impulse: { x: 3, y: 4 },
-+      },
+ function loadNextPuzzle(): void {
+   const nextPuzzle = getNextUnlockedPuzzle(
+     activePuzzle.id,
+     builtInPuzzles,
+     progression,
++    parentSettings.puzzleLocking,
+   );
+   if (nextPuzzle) selectPuzzle(nextPuzzle.id);
+ }
+diff --git a/src/state/gameState.ts b/src/state/gameState.ts
+index 21970a2..b221bd7 100644
+--- a/src/state/gameState.ts
++++ b/src/state/gameState.ts
+@@ -64,6 +64,7 @@ export interface RemoveComponentAction {
+ export interface AdvanceTimeAction {
+   type: "advance-time";
+   deltaMs: number;
++  enforceTimer?: boolean;
+ }
+ 
+ export type GameAction =
+@@ -225,7 +226,11 @@ export function transitionGameState(
      };
+   }
+   if (typeof action === "object" && action.type === "advance-time") {
+-    if (state.mode !== "running" || state.timeRemainingMs === undefined) {
++    if (
++      action.enforceTimer === false ||
++      state.mode !== "running" ||
++      state.timeRemainingMs === undefined
++    ) {
+       return {
+         ...state,
+         rampTransforms: { ...state.rampTransforms },
+diff --git a/src/state/progression.ts b/src/state/progression.ts
+index 173df07..7f4c96f 100644
+--- a/src/state/progression.ts
++++ b/src/state/progression.ts
+@@ -93,6 +93,7 @@ export function saveProgression(
+ export function getPuzzleProgress(
+   puzzles: readonly LevelDefinition[],
+   progression: Readonly<ProgressionState>,
++  lockingEnabled = true,
+ ): PuzzleProgress[] {
+   const completed = new Set(progression.completedPuzzleIds);
+   return puzzles.map((puzzle, index) => {
+@@ -101,6 +102,7 @@ export function getPuzzleProgress(
+     }
+     const previousPuzzle = puzzles[index - 1];
+     const isAvailable =
++      !lockingEnabled ||
+       progression.unlockAll ||
+       index === 0 ||
+       (previousPuzzle !== undefined && completed.has(previousPuzzle.id));
+@@ -139,8 +141,9 @@ export function canSelectPuzzle(
+   puzzleId: string,
+   puzzles: readonly LevelDefinition[],
+   progression: Readonly<ProgressionState>,
++  lockingEnabled = true,
+ ): boolean {
+-  return getPuzzleProgress(puzzles, progression).some(
++  return getPuzzleProgress(puzzles, progression, lockingEnabled).some(
+     ({ availability, puzzle }) =>
+       puzzle.id === puzzleId && availability !== "locked",
+   );
+@@ -168,9 +171,13 @@ export function switchPuzzle(
+   puzzleId: string,
+   puzzles: readonly LevelDefinition[],
+   progression: Readonly<ProgressionState>,
++  lockingEnabled = true,
+ ): PuzzleRuntime {
+   const target = puzzles.find((puzzle) => puzzle.id === puzzleId);
+-  if (!target || !canSelectPuzzle(target.id, puzzles, progression)) {
++  if (
++    !target ||
++    !canSelectPuzzle(target.id, puzzles, progression, lockingEnabled)
++  ) {
+     return {
+       puzzleId: current.puzzleId,
+       gameState: { ...current.gameState },
+@@ -183,11 +190,13 @@ export function getNextUnlockedPuzzle(
+   puzzleId: string,
+   puzzles: readonly LevelDefinition[],
+   progression: Readonly<ProgressionState>,
++  lockingEnabled = true,
+ ): LevelDefinition | undefined {
+   const currentIndex = puzzles.findIndex((puzzle) => puzzle.id === puzzleId);
+   if (currentIndex < 0) return undefined;
+   const nextPuzzle = puzzles[currentIndex + 1];
+-  return nextPuzzle && canSelectPuzzle(nextPuzzle.id, puzzles, progression)
++  return nextPuzzle &&
++    canSelectPuzzle(nextPuzzle.id, puzzles, progression, lockingEnabled)
+     ? nextPuzzle
+     : undefined;
+ }
+diff --git a/src/style.css b/src/style.css
+index c63a359..5249278 100644
+--- a/src/style.css
++++ b/src/style.css
+@@ -61,6 +61,12 @@ h1 {
+   font-weight: 800;
+ }
  
--    executeContactRules([destroyBirdBlock], bird, block);
-+    executeContactRules([rule], block, ball);
-+    expect(ball.velocity()).toEqual({ x: 5, y: 3 });
-+  });
- 
--    expect(bird.wasDestroyed()).toBe(false);
--    expect(block.destroyCount()).toBe(1);
-+  it("redirects while preserving speed, including a reversed contact order", () => {
-+    const ball = participant("ball-1", "ball", { x: 3, y: 4 });
-+    const block = participant("block-1", "block");
-+    const rule: ContactRule = {
-+      contacts: ["ball", "block"],
-+      action: {
-+        type: "redirect",
-+        target: { type: "contact", index: 0 },
-+        direction: { x: -1, y: 0 },
-+      },
-+    };
++.mode-label[data-mode="success"]::before {
++  margin-right: 0.35em;
++  content: "★";
++  color: #d18b28;
++}
 +
-+    executeContactRules([rule], block, ball);
-+    expect(ball.velocity()).toEqual({ x: -5, y: 0 });
+ .status-panel {
+   display: flex;
+   align-items: center;
+@@ -256,6 +262,25 @@ h1 {
+   font-weight: 800;
+ }
+ 
++.settings-panel {
++  display: grid;
++  gap: 10px;
++}
++
++.settings-heading {
++  color: #344e41;
++  font-weight: 800;
++}
++
++.control-icon {
++  display: inline-block;
++  min-width: 1.1em;
++  color: currentcolor;
++  font-size: 1.15em;
++  line-height: 1;
++  text-align: center;
++}
++
+ #game-container {
+   overflow: hidden;
+   width: 100%;
+diff --git a/src/ui/Controls.ts b/src/ui/Controls.ts
+index 4447dc6..23e25c6 100644
+--- a/src/ui/Controls.ts
++++ b/src/ui/Controls.ts
+@@ -1,5 +1,6 @@
+ import type { LevelDefinition, PuzzleDifficulty } from "../levels/levelTypes";
+ import type { PuzzleProgress } from "../state/progression";
++import type { ParentSettings } from "../state/parentSettings";
+ import type {
+   EnabledControls,
+   GameAction,
+@@ -22,6 +23,7 @@ export interface PlayScreenView {
+   puzzleProgress: readonly PuzzleProgress[];
+   totalBuiltInPuzzles: number;
+   unlockAll: boolean;
++  parentSettings: ParentSettings;
+ }
+ 
+ export class Controls {
+@@ -81,12 +83,22 @@ export class Controls {
+   private readonly unlockAllCheckbox = requireElement<HTMLInputElement>(
+     "unlock-all-checkbox",
+   );
++  private readonly puzzleLockingCheckbox = requireElement<HTMLInputElement>(
++    "puzzle-locking-checkbox",
++  );
++  private readonly timerFailureCheckbox = requireElement<HTMLInputElement>(
++    "timer-failure-checkbox",
++  );
+   private puzzleViewKey?: string;
+ 
+   constructor(
+     onAction: (action: GameAction) => void,
+     private readonly onPuzzleSelect: (puzzleId: string) => void,
+     private readonly onSetUnlockAll: (unlockAll: boolean) => void,
++    private readonly onSetParentSetting: (
++      key: keyof ParentSettings,
++      value: boolean,
++    ) => void,
+     private readonly onNextPuzzle: () => void,
+   ) {
+     this.buttons = {
+@@ -129,6 +141,18 @@ export class Controls {
+     this.unlockAllCheckbox.addEventListener("change", () =>
+       this.onSetUnlockAll(this.unlockAllCheckbox.checked),
+     );
++    this.puzzleLockingCheckbox.addEventListener("change", () =>
++      this.onSetParentSetting(
++        "puzzleLocking",
++        this.puzzleLockingCheckbox.checked,
++      ),
++    );
++    this.timerFailureCheckbox.addEventListener("change", () =>
++      this.onSetParentSetting(
++        "timerFailureMode",
++        this.timerFailureCheckbox.checked,
++      ),
++    );
+     this.nextPuzzleButton.addEventListener("click", () => this.onNextPuzzle());
+   }
+ 
+@@ -137,8 +161,9 @@ export class Controls {
+     for (const key of Object.keys(this.buttons) as (keyof EnabledControls)[]) {
+       this.buttons[key].disabled = !enabled[key];
+     }
+-    this.buttons.simulation.textContent =
+-      state.mode === "running" ? "Pause" : "Run";
++    const simulationLabel = state.mode === "running" ? "Pause" : "Run";
++    const simulationIcon = state.mode === "running" ? "Ⅱ" : "▶";
++    this.buttons.simulation.innerHTML = `<span class="control-icon" aria-hidden="true">${simulationIcon}</span> ${simulationLabel}`;
+     this.renderPaletteItem(
+       this.trayBlockButton,
+       this.trayBlockLabel,
+@@ -169,19 +194,20 @@ export class Controls {
+     );
+     this.partsPaletteToggle.disabled = state.mode !== "edit" || state.succeeded;
+     this.rerunButton.disabled = state.mode === "edit" || !state.runSnapshot;
+-    this.renderTimer(state);
++    this.renderTimer(state, view.parentSettings.timerFailureMode);
+     const label = state.succeeded
+       ? "Success"
+       : state.mode === "failed"
+         ? "Failed — Time expired"
+         : state.mode.charAt(0).toUpperCase() + state.mode.slice(1);
+     this.modeLabel.textContent = `Mode: ${label}`;
++    this.modeLabel.dataset.mode = state.succeeded ? "success" : state.mode;
+     this.levelProgressLabel.textContent = `Level ${view.levelNumber}`;
+     this.nextPuzzleButton.hidden = !state.succeeded;
+     this.nextPuzzleButton.disabled = !state.succeeded || !view.nextPuzzle;
+     this.nextPuzzleButton.textContent = view.nextPuzzle
+-      ? `Next Puzzle: ${view.nextPuzzle.title}`
+-      : "Last Puzzle Complete";
++      ? `➜ Next Puzzle: ${view.nextPuzzle.title}`
++      : "★ Last Puzzle Complete";
+     this.puzzleTitleLabel.textContent = view.activePuzzle.title;
+     this.puzzleDifficultyLabel.textContent = view.activePuzzle.difficulty;
+     this.puzzleSelectorButton.setAttribute(
+@@ -189,11 +215,14 @@ export class Controls {
+       `${view.activePuzzle.title} · ${view.activePuzzle.difficulty} · Level ${view.levelNumber}`,
+     );
+     this.unlockAllCheckbox.checked = view.unlockAll;
++    this.unlockAllCheckbox.disabled = !view.parentSettings.puzzleLocking;
++    this.puzzleLockingCheckbox.checked = view.parentSettings.puzzleLocking;
++    this.timerFailureCheckbox.checked = view.parentSettings.timerFailureMode;
+     this.renderPuzzleSelector(view);
+   }
+ 
+-  renderTimer(state: Readonly<GameState>): void {
+-    if (state.timeRemainingMs === undefined) {
++  renderTimer(state: Readonly<GameState>, timerFailureMode = true): void {
++    if (!timerFailureMode || state.timeRemainingMs === undefined) {
+       this.timerLabel.hidden = true;
+       return;
+     }
+@@ -225,7 +254,7 @@ export class Controls {
+     this.playArea.classList.toggle("play-area--palette-collapsed", collapsed);
+     this.partsPalette.hidden = collapsed;
+     this.partsPaletteToggle.setAttribute("aria-expanded", String(!collapsed));
+-    this.partsPaletteToggle.textContent = collapsed ? "Parts" : "Close";
++    this.partsPaletteToggle.innerHTML = `<span class="control-icon" aria-hidden="true">${collapsed ? "▣" : "×"}</span> ${collapsed ? "Parts" : "Close"}`;
+   }
+ 
+   private setPuzzleSelectorExpanded(expanded: boolean): void {
+diff --git a/tests/gameState.test.ts b/tests/gameState.test.ts
+index 7ee5816..fa9f6db 100644
+--- a/tests/gameState.test.ts
++++ b/tests/gameState.test.ts
+@@ -499,6 +499,45 @@ describe("timed puzzle state", () => {
+     expect(resumed).toMatchObject({ mode: "running", timeRemainingMs: 7_500 });
    });
  
--  it("executes a declarative bird-to-ramp destroy rule without actor-specific logic", () => {
--    const bird = participant("bird");
--    const ramp = participant("ramp");
--    const destroyBirdRamp: ContactRule = {
--      contacts: ["bird", "ramp"],
--      action: { type: "destroy", target: "ramp" },
-+  it("evaluates generic participant-id conditions deterministically", () => {
-+    const rule: ContactRule = {
-+      contacts: ["ball", "block"],
-+      conditions: [
-+        {
-+          type: "participant-id",
-+          target: { type: "contact", index: 0 },
-+          equals: "chosen-ball",
-+        },
-+      ],
-+      action: {
-+        type: "impulse",
-+        target: { type: "contact", index: 0 },
-+        impulse: { x: 1, y: 0 },
-+      },
-     };
-+    const chosen = participant("chosen-ball", "ball");
-+    const rejected = participant("other-ball", "ball");
-+    const block = participant("block-1", "block");
-+
-+    executeContactRules([rule], chosen, block);
-+    executeContactRules([rule], rejected, block);
-+
-+    expect(chosen.velocity()).toEqual({ x: 1, y: 0 });
-+    expect(rejected.velocity()).toEqual({ x: 0, y: 0 });
-+  });
-+
-+  it("uses participant ids to target same-tag contacts unambiguously", () => {
-+    const firstBall = participant("left", "ball", { x: 1, y: 0 });
-+    const secondBall = participant("right", "ball", { x: 1, y: 0 });
-+    const rule: ContactRule = {
-+      contacts: ["ball", "ball"],
-+      action: {
-+        type: "redirect",
-+        target: { type: "id", id: "right" },
-+        direction: { x: 0, y: 1 },
-+      },
-+    };
-+
-+    executeContactRules([rule], secondBall, firstBall);
-+    expect(firstBall.velocity()).toEqual({ x: 1, y: 0 });
-+    expect(secondBall.velocity()).toEqual({ x: 0, y: 1 });
-+  });
-+
-+  it("executes matching rules in source order and repeats deterministically", () => {
-+    const rules: ContactRule[] = [
-+      {
-+        contacts: ["ball", "block"],
-+        action: {
-+          type: "impulse",
-+          target: { type: "contact", index: 0 },
-+          impulse: { x: 2, y: 0 },
-+        },
-+      },
-+      {
-+        contacts: ["ball", "block"],
-+        action: {
-+          type: "redirect",
-+          target: { type: "contact", index: 0 },
-+          direction: { x: 0, y: 1 },
-+        },
-+      },
-+    ];
-+    const run = () => {
-+      const ball = participant("ball-1", "ball", { x: 1, y: 0 });
-+      executeContactRules(rules, ball, participant("block-1", "block"));
-+      return { effects: ball.effects(), velocity: ball.velocity() };
-+    };
-+
-+    expect(run()).toEqual({
-+      effects: ["impulse:2,0", "redirect:0,1"],
-+      velocity: { x: 0, y: 3 },
++  it("continues running when the parent timer/failure mode suppresses ticks", () => {
++    const running = transitionGameState(timedInitialState, "toggle-simulation");
++    const gentleTick = transitionGameState(running, {
++      type: "advance-time",
++      deltaMs: 20_000,
++      enforceTimer: false,
 +    });
-+    expect(run()).toEqual(run());
-+  });
- 
--    executeContactRules([destroyBirdRamp], ramp, bird);
-+  it("dispatches only registered capabilities, not concrete object types", () => {
-+    const experimental = participant("experimental-1", "unlisted-widget", {
-+      x: 1,
-+      y: 0,
++
++    expect(gentleTick).toMatchObject({
++      mode: "running",
++      timeRemainingMs: 10_000,
 +    });
-+    const surface = participant("surface-1", "surface");
-+    const rule = {
-+      contacts: ["unlisted-widget", "surface"],
-+      action: {
-+        type: "impulse",
-+        target: { type: "contact", index: 0 },
-+        impulse: { x: 4, y: 0 },
-+      },
-+    } as unknown as ContactRule;
- 
--    expect(bird.wasDestroyed()).toBe(false);
--    expect(ramp.destroyCount()).toBe(1);
-+    executeContactRules([rule], surface, experimental);
-+    expect(experimental.velocity()).toEqual({ x: 5, y: 0 });
-   });
- });
-diff --git a/tests/levelValidation.test.ts b/tests/levelValidation.test.ts
-index 06331b1..ce1397a 100644
---- a/tests/levelValidation.test.ts
-+++ b/tests/levelValidation.test.ts
-@@ -161,6 +161,77 @@ describe("validateLevel", () => {
-     ).toThrow(/destroy one of its contact tags/i);
++  });
++
++  it("keeps Reset and Rerun deterministic with timer enforcement on or off", () => {
++    const running = transitionGameState(timedInitialState, "toggle-simulation");
++    const gentle = transitionGameState(running, {
++      type: "advance-time",
++      deltaMs: 9_000,
++      enforceTimer: false,
++    });
++    const timed = transitionGameState(running, {
++      type: "advance-time",
++      deltaMs: 9_000,
++      enforceTimer: true,
++    });
++
++    expect(transitionGameState(gentle, "rerun")).toMatchObject({
++      mode: "running",
++      timeRemainingMs: 10_000,
++    });
++    expect(transitionGameState(timed, "rerun")).toMatchObject({
++      mode: "running",
++      timeRemainingMs: 10_000,
++    });
++    expect(transitionGameState(gentle, "reset")).toEqual(timedInitialState);
++    expect(transitionGameState(timed, "reset")).toEqual(timedInitialState);
++  });
++
+   it("reruns with the full limit and Reset restores Edit with the original timer", () => {
+     const running = transitionGameState(timedInitialState, "toggle-simulation");
+     const elapsed = transitionGameState(running, {
+diff --git a/tests/progression.test.ts b/tests/progression.test.ts
+index e630925..d700294 100644
+--- a/tests/progression.test.ts
++++ b/tests/progression.test.ts
+@@ -57,6 +57,37 @@ describe("built-in puzzle progression", () => {
+     ]);
    });
  
-+  it("validates contact action selectors, vectors, conditions, and same-tag rules", () => {
-+    const level = validateLevel({
-+      ...rawLevel,
-+      contactRules: [
-+        {
-+          contacts: ["ball", "ball"],
-+          conditions: [
-+            {
-+              type: "participant-id",
-+              target: { type: "id", id: "prototype-ball" },
-+              equals: "prototype-ball",
-+            },
-+          ],
-+          action: {
-+            type: "impulse",
-+            target: { type: "contact", index: 1 },
-+            impulse: { x: 2, y: -3 },
-+          },
-+        },
-+      ],
-+    });
-+    expect(level.contactRules[0]).toMatchObject({
-+      contacts: ["ball", "ball"],
-+      action: { type: "impulse", impulse: { x: 2, y: -3 } },
-+    });
++  it("makes every puzzle selectable when parent puzzle locking is off", () => {
++    const progression = createInitialProgression();
 +
-+    expect(() =>
-+      validateLevel({
-+        ...rawLevel,
-+        contactRules: [
-+          {
-+            contacts: ["ball", "block"],
-+            action: {
-+              type: "redirect",
-+              target: { type: "contact", index: 0 },
-+              direction: { x: 0, y: 0 },
-+            },
-+          },
-+        ],
-+      }),
-+    ).toThrow(/unknown or invalid action/i);
-+    expect(() =>
-+      validateLevel({
-+        ...rawLevel,
-+        contactRules: [
-+          {
-+            contacts: ["ball", "block"],
-+            conditions: [
-+              {
-+                type: "participant-speed",
-+                target: { type: "contact", index: 0 },
-+              },
-+            ],
-+            action: { type: "destroy", target: "block" },
-+          },
-+        ],
-+      }),
-+    ).toThrow(/unknown or invalid condition/i);
-+    expect(() =>
-+      validateLevel({
-+        ...rawLevel,
-+        contactRules: [
-+          {
-+            contacts: ["ball", "ball"],
-+            action: { type: "destroy", target: "ball" },
-+          },
-+        ],
-+      }),
-+    ).toThrow(/unknown or invalid action/i);
++    expect(getPuzzleProgress(builtInPuzzles, progression, false)).toEqual(
++      builtInPuzzles.map((puzzle) => ({ puzzle, availability: "available" })),
++    );
++    expect(canSelectPuzzle(hard!.id, builtInPuzzles, progression, false)).toBe(
++      true,
++    );
 +  });
 +
-   it("requires valid actor patrol definitions", () => {
-     const actor = rawLevel.actors[0]!;
-     expect(() =>
++  it("restores sequential restrictions without deleting earned completion", () => {
++    const earned = completePuzzle(
++      createInitialProgression(),
++      basic!.id,
++      builtInPuzzles,
++    );
++
++    expect(getPuzzleProgress(builtInPuzzles, earned, false)[2]).toMatchObject({
++      availability: "available",
++    });
++    expect(
++      getPuzzleProgress(builtInPuzzles, earned, true).slice(0, 3),
++    ).toMatchObject([
++      { availability: "completed" },
++      { availability: "available" },
++      { availability: "locked" },
++    ]);
++    expect(earned.completedPuzzleIds).toEqual([basic!.id]);
++  });
++
+   it("marks a completed puzzle and unlocks the next one", () => {
+     const progression = completePuzzle(
+       createInitialProgression(),
 diff --git a/docs/reviews/MILESTONE_20_SOL_REVIEW.md b/docs/reviews/MILESTONE_20_SOL_REVIEW.md
 new file mode 100644
 index 0000000..974c5ad
@@ -1415,577 +1046,117 @@ index 0000000..8f375af
 +Git branch: `main`
 +
 +Codex coworking handoff test succeeded.
-diff --git a/src/game/headlessSimulation.ts b/src/game/headlessSimulation.ts
+diff --git a/src/state/parentSettings.ts b/src/state/parentSettings.ts
 new file mode 100644
-index 0000000..7149b25
+index 0000000..bdffe3e
 --- /dev/null
-+++ b/src/game/headlessSimulation.ts
-@@ -0,0 +1,379 @@
-+import bundledMatter from "phaser/src/physics/matter-js/CustomMain.js";
-+import {
-+  COLLISION_ACTOR_BODY_OPTIONS,
-+  getPatrolVelocity,
-+  resolvePatrolDirection,
-+  type PatrolState,
-+} from "./autonomousActors";
-+import {
-+  addContactVectors,
-+  executeContactRules,
-+  redirectVelocity,
-+  type ContactParticipant,
-+} from "./contactRules";
-+import { SIMULATION_STEP_MS } from "./simulationClock";
-+import type {
-+  ActorDefinition,
-+  ContactTag,
-+  LevelDefinition,
-+  RampDefinition,
-+} from "../levels/levelTypes";
++++ b/src/state/parentSettings.ts
+@@ -0,0 +1,58 @@
++import type { StorageAdapter } from "./progression";
 +
-+interface MatterVector {
-+  x: number;
-+  y: number;
++export const PARENT_SETTINGS_STORAGE_KEY = "contraption-lab.parent-settings.v1";
++
++export interface ParentSettings {
++  puzzleLocking: boolean;
++  timerFailureMode: boolean;
 +}
 +
-+interface MatterBody {
-+  readonly position: MatterVector;
-+  readonly velocity: MatterVector;
-+  ignoreGravity: boolean;
++export function createInitialParentSettings(): ParentSettings {
++  return { puzzleLocking: false, timerFailureMode: false };
 +}
 +
-+interface MatterCollisionPair {
-+  bodyA: MatterBody;
-+  bodyB: MatterBody;
-+}
-+
-+interface MatterCollisionEvent {
-+  pairs: readonly MatterCollisionPair[];
-+}
-+
-+interface MatterEngine {
-+  gravity: MatterVector & { scale: number };
-+  world: object;
-+}
-+
-+interface MatterApi {
-+  Bodies: {
-+    circle(
-+      x: number,
-+      y: number,
-+      radius: number,
-+      options: Readonly<Record<string, unknown>>,
-+    ): MatterBody;
-+    rectangle(
-+      x: number,
-+      y: number,
-+      width: number,
-+      height: number,
-+      options: Readonly<Record<string, unknown>>,
-+    ): MatterBody;
-+  };
-+  Body: {
-+    setAngle(body: MatterBody, angle: number): void;
-+    setVelocity(body: MatterBody, velocity: MatterVector): void;
-+  };
-+  Engine: {
-+    create(): MatterEngine;
-+    update(engine: MatterEngine, delta: number): MatterEngine;
-+  };
-+  Events: {
-+    on(
-+      object: MatterEngine,
-+      eventName: "collisionStart",
-+      callback: (event: MatterCollisionEvent) => void,
-+    ): void;
-+  };
-+  World: {
-+    add(world: object, bodies: MatterBody | readonly MatterBody[]): void;
-+    remove(world: object, body: MatterBody): void;
-+  };
-+}
-+
-+const Matter = bundledMatter as MatterApi;
-+
-+export const DEFAULT_HEADLESS_MAX_TICKS = 60 * 30;
-+
-+export interface SimulationRampPlacement {
-+  id: string;
-+  x: number;
-+  y: number;
-+  width: number;
-+  height: number;
-+  rotation: number;
-+}
-+
-+export interface SimulationPlacements {
-+  ramps?: readonly SimulationRampPlacement[];
-+}
-+
-+export interface SimulationOptions {
-+  maxTicks?: number;
-+}
-+
-+export type SimulationEvent =
-+  | {
-+      type: "contact";
-+      tick: number;
-+      participants: readonly [string, string];
-+    }
-+  | { type: "destroy"; tick: number; participant: string }
-+  | {
-+      type: "impulse";
-+      tick: number;
-+      participant: string;
-+      impulse: MatterVector;
-+    }
-+  | {
-+      type: "redirect";
-+      tick: number;
-+      participant: string;
-+      direction: MatterVector;
-+    }
-+  | { type: "goal"; tick: number; ballId: string }
-+  | { type: "max-ticks"; tick: number };
-+
-+export interface SimulationResult {
-+  solved: boolean;
-+  ticks: number;
-+  events: readonly SimulationEvent[];
-+}
-+
-+interface RegisteredBody extends ContactParticipant {
-+  body: MatterBody;
-+  id: string;
-+}
-+
-+interface SimulatedActor {
-+  body: MatterBody;
-+  definition: ActorDefinition;
-+  patrol: PatrolState;
-+}
-+
-+type RampBodyDefinition = Pick<
-+  RampDefinition,
-+  "height" | "id" | "rotation" | "width" | "x" | "y"
-+>;
-+
-+function createRampBody(definition: Readonly<RampBodyDefinition>): MatterBody {
-+  const body = Matter.Bodies.rectangle(
-+    definition.x,
-+    definition.y,
-+    definition.width,
-+    definition.height,
-+    { isStatic: true, label: `ramp:${definition.id}` },
++function isStoredParentSettings(value: unknown): value is ParentSettings {
++  return (
++    typeof value === "object" &&
++    value !== null &&
++    "puzzleLocking" in value &&
++    typeof value.puzzleLocking === "boolean" &&
++    "timerFailureMode" in value &&
++    typeof value.timerFailureMode === "boolean"
 +  );
-+  Matter.Body.setAngle(body, definition.rotation);
-+  return body;
 +}
 +
-+function getEffectiveRamps(
-+  level: Readonly<LevelDefinition>,
-+  placements: Readonly<SimulationPlacements>,
-+): SimulationRampPlacement[] {
-+  const placedById = new Map(
-+    placements.ramps?.map((placement) => [placement.id, placement]) ?? [],
-+  );
-+  const ramps = level.ramps.map((ramp) => placedById.get(ramp.id) ?? ramp);
-+  for (const placement of placements.ramps ?? []) {
-+    if (!level.ramps.some((ramp) => ramp.id === placement.id)) {
-+      ramps.push(placement);
-+    }
++export function loadParentSettings(
++  storage: Pick<StorageAdapter, "getItem"> | undefined,
++): ParentSettings {
++  if (!storage) return createInitialParentSettings();
++  try {
++    const serialized = storage.getItem(PARENT_SETTINGS_STORAGE_KEY);
++    const parsed = serialized ? JSON.parse(serialized) : undefined;
++    return isStoredParentSettings(parsed)
++      ? { ...parsed }
++      : createInitialParentSettings();
++  } catch {
++    return createInitialParentSettings();
 +  }
-+  return ramps;
 +}
 +
-+function participantLabel(participant: Readonly<RegisteredBody>): string {
-+  return `${participant.tag}:${participant.id}`;
++export function saveParentSettings(
++  storage: Pick<StorageAdapter, "setItem"> | undefined,
++  settings: Readonly<ParentSettings>,
++): void {
++  if (!storage) return;
++  try {
++    storage.setItem(PARENT_SETTINGS_STORAGE_KEY, JSON.stringify(settings));
++  } catch {
++    // Parent options remain optional when browser storage is unavailable.
++  }
 +}
 +
-+function orderedParticipants(
-+  first: Readonly<RegisteredBody>,
-+  second: Readonly<RegisteredBody>,
-+): readonly [string, string] {
-+  const labels = [participantLabel(first), participantLabel(second)].sort();
-+  return [labels[0]!, labels[1]!];
++export function setParentSetting(
++  settings: Readonly<ParentSettings>,
++  key: keyof ParentSettings,
++  value: boolean,
++): ParentSettings {
++  return { ...settings, [key]: value };
 +}
-+
-+/**
-+ * Runs the bundled Phaser Matter engine at the same fixed 60 Hz step used by
-+ * PrototypeScene, without creating Phaser game objects, a canvas, or a DOM.
-+ */
-+export function simulate(
-+  level: Readonly<LevelDefinition>,
-+  placements: Readonly<SimulationPlacements> = {},
-+  options: Readonly<SimulationOptions> = {},
-+): SimulationResult {
-+  const maxTicks = options.maxTicks ?? DEFAULT_HEADLESS_MAX_TICKS;
-+  if (!Number.isInteger(maxTicks) || maxTicks < 0) {
-+    throw new Error("Simulation maxTicks must be a non-negative integer.");
-+  }
-+
-+  const engine = Matter.Engine.create();
-+  engine.gravity.x = level.gravity.x;
-+  engine.gravity.y = level.gravity.y;
-+  const bodies = new Map<MatterBody, RegisteredBody>();
-+  const actors: SimulatedActor[] = [];
-+  const events: SimulationEvent[] = [];
-+  let solved = false;
-+  let tick = 0;
-+
-+  const register = (
-+    body: MatterBody,
-+    tag: ContactTag,
-+    id: string,
-+  ): RegisteredBody => {
-+    const participant: RegisteredBody = {
-+      body,
-+      id,
-+      tag,
-+      destroy: () => {
-+        if (!bodies.delete(body)) return;
-+        Matter.World.remove(engine.world, body);
-+        events.push({
-+          type: "destroy",
-+          tick,
-+          participant: `${tag}:${id}`,
-+        });
-+      },
-+      applyImpulse: (impulse) => {
-+        Matter.Body.setVelocity(
-+          body,
-+          addContactVectors(body.velocity, impulse),
-+        );
-+        events.push({
-+          type: "impulse",
-+          tick,
-+          participant: `${tag}:${id}`,
-+          impulse: { x: impulse.x, y: impulse.y },
-+        });
-+      },
-+      redirect: (direction) => {
-+        const velocity = redirectVelocity(body.velocity, direction);
-+        if (!velocity) return;
-+        Matter.Body.setVelocity(body, velocity);
-+        events.push({
-+          type: "redirect",
-+          tick,
-+          participant: `${tag}:${id}`,
-+          direction: { x: direction.x, y: direction.y },
-+        });
-+      },
-+    };
-+    bodies.set(body, participant);
-+    return participant;
-+  };
-+
-+  const add = (body: MatterBody): void => Matter.World.add(engine.world, body);
-+
-+  const floor = Matter.Bodies.rectangle(
-+    level.floor.x,
-+    level.floor.y,
-+    level.floor.width,
-+    level.floor.height,
-+    { isStatic: true, label: "floor" },
-+  );
-+  add(floor);
-+  register(floor, "floor", "floor");
-+
-+  const goal = Matter.Bodies.rectangle(
-+    level.goal.x,
-+    level.goal.y,
-+    level.goal.width,
-+    level.goal.height,
-+    { isSensor: true, isStatic: true, label: "prototype-goal" },
-+  );
-+  add(goal);
-+  register(goal, "goal", "goal");
-+
-+  for (const block of level.blocks) {
-+    const body = Matter.Bodies.rectangle(
-+      block.x,
-+      block.y,
-+      block.width,
-+      block.height,
-+      { isStatic: true, label: `block:${block.id}` },
-+    );
-+    add(body);
-+    register(body, "block", block.id);
-+  }
-+
-+  for (const ramp of getEffectiveRamps(level, placements)) {
-+    const body = createRampBody(ramp);
-+    add(body);
-+    register(body, "ramp", ramp.id);
-+  }
-+
-+  for (const ball of level.balls) {
-+    if (ball.initiallyPlaced === false) continue;
-+    const body = Matter.Bodies.circle(ball.x, ball.y, ball.radius, {
-+      friction: 0.02,
-+      label: `ball:${ball.id}`,
-+      restitution: 0.15,
-+    });
-+    add(body);
-+    register(body, "ball", ball.id);
-+  }
-+
-+  for (const actor of level.actors) {
-+    if (actor.initiallyPlaced === false) continue;
-+    const body = Matter.Bodies.rectangle(
-+      actor.x,
-+      actor.y,
-+      actor.width,
-+      actor.height,
-+      { ...COLLISION_ACTOR_BODY_OPTIONS, label: `actor:${actor.id}` },
-+    );
-+    body.ignoreGravity = true;
-+    add(body);
-+    register(body, actor.tag, actor.id);
-+    actors.push({
-+      body,
-+      definition: actor,
-+      patrol: {
-+        direction: actor.movement.direction,
-+        position: actor.movement.axis === "horizontal" ? actor.x : actor.y,
-+      },
-+    });
-+  }
-+
-+  Matter.Events.on(engine, "collisionStart", ({ pairs }) => {
-+    for (const pair of pairs) {
-+      const first = bodies.get(pair.bodyA);
-+      const second = bodies.get(pair.bodyB);
-+      if (!first || !second) continue;
-+      events.push({
-+        type: "contact",
-+        tick,
-+        participants: orderedParticipants(first, second),
-+      });
-+      executeContactRules(level.contactRules, first, second);
-+      const ball =
-+        first.tag === "ball"
-+          ? first
-+          : second.tag === "ball"
-+            ? second
-+            : undefined;
-+      const goalContact = first.tag === "goal" || second.tag === "goal";
-+      if (ball && goalContact) {
-+        solved = true;
-+        events.push({ type: "goal", tick, ballId: ball.id });
-+      }
-+    }
-+  });
-+
-+  while (!solved && tick < maxTicks) {
-+    tick += 1;
-+    for (const actor of actors) {
-+      const position =
-+        actor.definition.movement.axis === "horizontal"
-+          ? actor.body.position.x
-+          : actor.body.position.y;
-+      const direction = resolvePatrolDirection(
-+        actor.definition.movement,
-+        position,
-+        actor.patrol.direction,
-+      );
-+      actor.patrol = { direction, position };
-+      Matter.Body.setVelocity(
-+        actor.body,
-+        getPatrolVelocity(actor.definition.movement, direction),
-+      );
-+    }
-+    Matter.Engine.update(engine, SIMULATION_STEP_MS);
-+  }
-+
-+  if (!solved) events.push({ type: "max-ticks", tick });
-+  return { solved, ticks: tick, events };
-+}
-diff --git a/src/game/phaserMatter.d.ts b/src/game/phaserMatter.d.ts
+diff --git a/tests/parentSettings.test.ts b/tests/parentSettings.test.ts
 new file mode 100644
-index 0000000..e59d26c
+index 0000000..47b8d7c
 --- /dev/null
-+++ b/src/game/phaserMatter.d.ts
-@@ -0,0 +1,4 @@
-+declare module "phaser/src/physics/matter-js/CustomMain.js" {
-+  const matter: unknown;
-+  export default matter;
-+}
-diff --git a/tests/headlessSimulation.test.ts b/tests/headlessSimulation.test.ts
-new file mode 100644
-index 0000000..d4289d3
---- /dev/null
-+++ b/tests/headlessSimulation.test.ts
-@@ -0,0 +1,173 @@
++++ b/tests/parentSettings.test.ts
+@@ -0,0 +1,44 @@
 +import { describe, expect, it } from "vitest";
-+import rawBridgeTheGap from "../src/levels/bridgeTheGap.json";
-+import rawDownTheRamp from "../src/levels/downTheRamp.json";
-+import rawPrototype from "../src/levels/prototype.json";
 +import {
-+  simulate,
-+  type SimulationPlacements,
-+} from "../src/game/headlessSimulation";
-+import { validateLevel } from "../src/levels/validateLevel";
++  PARENT_SETTINGS_STORAGE_KEY,
++  createInitialParentSettings,
++  loadParentSettings,
++  saveParentSettings,
++  setParentSetting,
++} from "../src/state/parentSettings";
++import type { StorageAdapter } from "../src/state/progression";
 +
-+const prototype = validateLevel(rawPrototype);
-+const downTheRamp = validateLevel(rawDownTheRamp);
-+const bridgeTheGap = validateLevel(rawBridgeTheGap);
++class MemoryStorage implements StorageAdapter {
++  private readonly values = new Map<string, string>();
 +
-+const LEGACY_SOLUTION: SimulationPlacements = {
-+  ramps: [
-+    {
-+      id: "upper-ramp",
-+      x: 265,
-+      y: 245,
-+      width: 260,
-+      height: 24,
-+      rotation: (5 * Math.PI) / 36,
-+    },
-+    {
-+      id: "lower-ramp",
-+      x: 540,
-+      y: 395,
-+      width: 310,
-+      height: 24,
-+      rotation: (5 * Math.PI) / 36,
-+    },
-+  ],
-+};
++  getItem(key: string): string | null {
++    return this.values.get(key) ?? null;
++  }
 +
-+const DOWN_THE_RAMP_SOLUTION: SimulationPlacements = {
-+  ramps: [
-+    {
-+      id: "reference-upper-ramp",
-+      x: 375,
-+      y: 270,
-+      width: 200,
-+      height: 24,
-+      rotation: (4 * Math.PI) / 36,
-+    },
-+    {
-+      id: "reference-lower-ramp",
-+      x: 565,
-+      y: 338,
-+      width: 200,
-+      height: 24,
-+      rotation: (4 * Math.PI) / 36,
-+    },
-+  ],
-+};
++  setItem(key: string, value: string): void {
++    this.values.set(key, value);
++  }
++}
 +
-+const BRIDGE_THE_GAP_SOLUTION: SimulationPlacements = {
-+  ramps: [
-+    {
-+      id: "reference-upper-ramp",
-+      x: 370,
-+      y: 290,
-+      width: 200,
-+      height: 24,
-+      rotation: (3 * Math.PI) / 36,
-+    },
-+    {
-+      id: "reference-lower-ramp",
-+      x: 565,
-+      y: 342,
-+      width: 200,
-+      height: 24,
-+      rotation: (3 * Math.PI) / 36,
-+    },
-+  ],
-+};
-+
-+describe("headless simulation", () => {
-+  it.each([
-+    [prototype, LEGACY_SOLUTION],
-+    [downTheRamp, DOWN_THE_RAMP_SOLUTION],
-+    [bridgeTheGap, BRIDGE_THE_GAP_SOLUTION],
-+  ] as const)(
-+    "solves the known %s reference placement",
-+    (level, placements) => {
-+      const result = simulate(level, placements, { maxTicks: 1_200 });
-+
-+      expect(result.solved).toBe(true);
-+      expect(result.ticks).toBeLessThanOrEqual(1_200);
-+      expect(result.events.at(-1)).toMatchObject({ type: "goal" });
-+    },
-+  );
-+
-+  it("rejects an incorrect reference placement", () => {
-+    const result = simulate(downTheRamp, {}, { maxTicks: 300 });
-+
-+    expect(result).toMatchObject({ solved: false, ticks: 300 });
-+    expect(result.events.at(-1)).toEqual({ type: "max-ticks", tick: 300 });
++describe("parent settings", () => {
++  it("defaults timer/failure and puzzle locking to off", () => {
++    expect(createInitialParentSettings()).toEqual({
++      puzzleLocking: false,
++      timerFailureMode: false,
++    });
 +  });
 +
-+  it("returns the same result and trace for repeated inputs", () => {
-+    expect(
-+      simulate(bridgeTheGap, BRIDGE_THE_GAP_SOLUTION, { maxTicks: 1_200 }),
-+    ).toEqual(
-+      simulate(bridgeTheGap, BRIDGE_THE_GAP_SOLUTION, { maxTicks: 1_200 }),
++  it("persists both parent options locally", () => {
++    const storage = new MemoryStorage();
++    const enabled = setParentSetting(
++      setParentSetting(createInitialParentSettings(), "timerFailureMode", true),
++      "puzzleLocking",
++      true,
 +    );
-+  });
 +
-+  it("stops at the configured max tick limit", () => {
-+    const result = simulate(downTheRamp, DOWN_THE_RAMP_SOLUTION, {
-+      maxTicks: 1,
-+    });
++    saveParentSettings(storage, enabled);
 +
-+    expect(result).toMatchObject({ solved: false, ticks: 1 });
-+    expect(result.events.at(-1)).toEqual({ type: "max-ticks", tick: 1 });
-+  });
-+
-+  it("does not mutate a level or placements", () => {
-+    const levelBefore = structuredClone(downTheRamp);
-+    const placementsBefore = structuredClone(DOWN_THE_RAMP_SOLUTION);
-+
-+    simulate(downTheRamp, DOWN_THE_RAMP_SOLUTION, { maxTicks: 1_200 });
-+
-+    expect(downTheRamp).toEqual(levelBefore);
-+    expect(DOWN_THE_RAMP_SOLUTION).toEqual(placementsBefore);
-+  });
-+
-+  it("uses the shared contact executor for declared headless actions", () => {
-+    const actionLevel = validateLevel({
-+      ...rawDownTheRamp,
-+      gravity: { x: 0, y: 0 },
-+      contactRules: [
-+        {
-+          contacts: ["ball", "block"],
-+          action: {
-+            type: "impulse",
-+            target: { type: "contact", index: 0 },
-+            impulse: { x: 3, y: -2 },
-+          },
-+        },
-+      ],
-+      balls: [
-+        {
-+          ...rawDownTheRamp.balls[0],
-+          x: 250,
-+          y: 200,
-+        },
-+      ],
-+      blocks: [
-+        {
-+          id: "contact-surface",
-+          ownership: "fixed",
-+          x: 250,
-+          y: 200,
-+          width: 100,
-+          height: 100,
-+        },
-+      ],
-+      floor: { ...rawDownTheRamp.floor, y: 520 },
-+      goal: { ...rawDownTheRamp.goal, x: 700, y: 300 },
-+    });
-+
-+    const result = simulate(actionLevel, {}, { maxTicks: 1 });
-+
-+    expect(result.events).toContainEqual({
-+      type: "impulse",
-+      tick: 1,
-+      participant: "ball:down-ramp-ball",
-+      impulse: { x: 3, y: -2 },
-+    });
-+    expect(simulate(actionLevel, {}, { maxTicks: 1 })).toEqual(result);
++    expect(storage.getItem(PARENT_SETTINGS_STORAGE_KEY)).toBeTruthy();
++    expect(loadParentSettings(storage)).toEqual(enabled);
 +  });
 +});
