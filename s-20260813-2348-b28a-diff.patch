@@ -1,0 +1,756 @@
+diff --git a/docs/CODEX_PROMPTS.md b/docs/CODEX_PROMPTS.md
+index e958789..1f1eee1 100644
+--- a/docs/CODEX_PROMPTS.md
++++ b/docs/CODEX_PROMPTS.md
+@@ -4402,3 +4402,162 @@ Final response must report:
+ - git status --short
+ 
+ Do not commit or push contraption-lab.
++
++Implement Phase 2 milestone #28 — Dynamic/toppling Block capability.
++
++Repository:
++~/code/contraption-lab
++
++Expected starting main HEAD:
++a5a0589 Add Sunny Attic reference art archive (39 assets)
++
++Coworking session token:
++s-20260813-2348-b28a
++
++IMPORTANT WORKFLOW:
++- Do NOT commit or push contraption-lab.
++- Implement, test, then hand off through prom-resp for ChatGPT review.
++- Preserve all pre-existing unrelated untracked files unchanged.
++- Current known unrelated untracked paths include:
++  - docs/reviews/
++  - s-20260812-1003-c7d4-response.md
++- Do NOT include those pre-existing paths in the #28 review patch.
++- Append this operational prompt to docs/CODEX_PROMPTS.md according to the existing prompt-log convention.
++
++Read first:
++- AGENTS.md
++- docs/PHASE2_RECONCILIATION.md
++- docs/PROJECT_STATE.md
++- relevant existing Block schema/runtime/rendering/headless/reset/rerun/inventory code and tests
++
++GOAL
++
++Implement the smallest architecture-consistent capability that gives Block-derived
++Painted Blocks deterministic dynamic/toppling behavior.
++
++#28 acceptance requirement:
++
++“their ownership, inventory, Reset, Rerun, and headless behavior are specified
++and verified deterministically.”
++
++REQUIREMENTS
++
++1. Preserve existing Block behavior by default.
++   Existing levels must not change behavior merely because #28 exists.
++
++2. Add a declarative Block-level capability for dynamic/toppling behavior.
++   Follow the existing JSON/schema/validation architecture.
++   Do not add Painted-Block-specific or character-specific branches.
++
++3. A dynamic Block must:
++   - participate as a Matter dynamic rigid body;
++   - rotate/topple naturally from deterministic collisions;
++   - transfer motion to other dynamic Blocks;
++   - use explicit deterministic gameplay geometry independent of artwork.
++
++4. Preserve existing ownership/inventory semantics.
++   Fixed and player-owned Blocks must continue to behave correctly according
++   to the existing ownership model.
++
++5. Reset semantics:
++   Reset must restore the level's JSON-defined initial state, including
++   position, rotation and relevant dynamic-body state.
++
++6. Rerun semantics:
++   Rerun must restore the exact run-start layout/state, including dynamic
++   Block position, rotation, linear velocity and angular velocity as required
++   for deterministic replay.
++
++7. Headless parity:
++   The headless simulation must support the same dynamic/toppling semantics
++   as rendered gameplay.
++
++8. Add focused tests proving:
++   - schema/validation behavior;
++   - old/static Block behavior remains unchanged;
++   - a deterministic Block toppling/chain interaction;
++   - deterministic repeat runs;
++   - Reset behavior;
++   - Rerun behavior;
++   - ownership/inventory behavior where relevant;
++   - headless toppling behavior.
++
++9. Do NOT:
++   - integrate Sunny Attic sprites (#29);
++   - change Chapter-1 levels (#30–#35);
++   - add dependencies;
++   - perform broad refactors;
++   - introduce object-specific hacks;
++   - couple sprite silhouettes to Matter bodies.
++
++10. If the existing architecture suggests a materially simpler implementation
++    than the wording above, use it only if it satisfies #28 acceptance and
++    explain the choice in the handoff.
++
++VALIDATION
++
++Run:
++
++npm run typecheck
++npm run lint
++npm test
++npm run format:check
++npm run build
++
++Because this changes rendered Matter behavior, also run the relevant Playwright
++regression coverage. Prefer:
++
++npx playwright test --workers=1
++
++If that cannot run, report the exact reason. Do not silently skip it.
++
++Before handoff:
++- inspect git diff carefully;
++- run git diff --check;
++- verify no accidental art, generated files, dependency changes or unrelated
++  pre-existing untracked files are included;
++- check syntax, formatting, truncation, erroneous empty files/lines, and
++  accidental scope expansion.
++
++PROM-RESP HANDOFF
++
++Write the complete final response to:
++
++~/code/prom-resp/s-20260813-2348-b28a-response.md
++
++Generate:
++
++~/code/prom-resp/s-20260813-2348-b28a-diff.patch
++
++The patch must represent ONLY the #28 changes made in this task, including
++tracked changes and any new files created for #28, while excluding the
++pre-existing unrelated untracked paths listed above.
++
++Do not add a make-diff.sh helper.
++
++Then in ~/code/prom-resp:
++
++1. stage both artifacts;
++2. commit them;
++3. pull --rebase origin main;
++4. push origin main;
++5. request approval if required.
++
++Claim delivery success only after that push succeeds.
++
++FINAL RESPONSE MUST INCLUDE
++
++- concise implementation summary
++- files changed
++- schema/API decision made
++- deterministic behavior implemented
++- tests added
++- exact validation results
++- Playwright result
++- git diff --check result
++- confirmation that existing unrelated untracked files were untouched
++- confirmation that contraption-lab was NOT committed or pushed
++- prom-resp commit/push result
++
++Then print the same complete final response in the Codex terminal and STOP.
++Do not commit or push contraption-lab.
+diff --git a/src/game/PrototypeScene.ts b/src/game/PrototypeScene.ts
+index 0aef439..dfbc8f7 100644
+--- a/src/game/PrototypeScene.ts
++++ b/src/game/PrototypeScene.ts
+@@ -329,6 +329,7 @@ export class PrototypeScene extends Phaser.Scene {
+       this.matter.world.step(SIMULATION_STEP_MS);
+       this.updateActorVisuals();
+       this.updateBallHighlights();
++      this.updateDynamicBlockVisuals();
+ 
+       if (!this.simulationRunning) return;
+       if (this.level.timeLimitSeconds !== undefined) {
+@@ -395,6 +396,11 @@ export class PrototypeScene extends Phaser.Scene {
+   ): void {
+     for (const block of this.blocks.values()) {
+       if (!block.editable) continue;
++      // A dynamic Block's live position is owned by the physics body once a run
++      // starts; only re-apply the stored edit transform while editing.
++      if (block.definition.dynamic === true && !this.editInteractionEnabled) {
++        continue;
++      }
+       const position =
+         transforms[block.definition.id]?.position ?? block.definition;
+       this.updateBlockPosition(
+@@ -535,6 +541,11 @@ export class PrototypeScene extends Phaser.Scene {
+             ...block.definition,
+             x: block.shape.x,
+             y: block.shape.y,
++            // Capture the live rotation (like ramps) so Rerun reproduces the
++            // exact run-start angle of a dynamic Block that was left toppled by
++            // a prior run before re-entering edit. Static Blocks keep their
++            // definition rotation here, so their behavior is unchanged.
++            rotation: block.shape.rotation,
+           },
+           fromTray: block.fromTray,
+         })),
+@@ -832,6 +843,8 @@ export class PrototypeScene extends Phaser.Scene {
+ 
+   private createBlock(definition: BlockDefinition, fromTray = false): void {
+     const editable = isEditablePart(definition, fromTray);
++    const isDynamic = definition.dynamic === true;
++    const rotation = definition.rotation ?? 0;
+     const highlightColor = editable
+       ? WOOD_HIGHLIGHT_COLOR
+       : FIXED_HIGHLIGHT_COLOR;
+@@ -858,6 +871,7 @@ export class PrototypeScene extends Phaser.Scene {
+         4,
+         editable ? BLOCK_STROKE_COLOR : FIXED_BLOCK_STROKE_COLOR,
+       )
++      .setRotation(rotation)
+       .setDepth(1);
+     const highlight = this.add
+       .rectangle(
+@@ -870,7 +884,7 @@ export class PrototypeScene extends Phaser.Scene {
+       )
+       .setDepth(2);
+     this.matter.add.gameObject(shape, {
+-      isStatic: true,
++      isStatic: !isDynamic,
+       label: `block:${definition.id}`,
+     });
+ 
+@@ -916,7 +930,7 @@ export class PrototypeScene extends Phaser.Scene {
+       shape,
+       selectionText,
+     };
+-    this.updateBlockSurface(block, definition);
++    this.updateBlockSurface(block, definition, rotation);
+     this.blocks.set(definition.id, block);
+     this.editableComponents.set(definition.id, block);
+     this.registerContactObject(shape, "block", definition.id, () =>
+@@ -1673,6 +1687,15 @@ export class PrototypeScene extends Phaser.Scene {
+     for (const ball of this.balls.values()) this.updateBallHighlight(ball);
+   }
+ 
++  private updateDynamicBlockVisuals(): void {
++    for (const block of this.blocks.values()) {
++      if (block.definition.dynamic !== true) continue;
++      const { x, y, rotation } = block.shape;
++      this.updateBlockSurface(block, { x, y }, rotation);
++      block.selectionText.setPosition(x, y - 34);
++    }
++  }
++
+   private updateBallHighlight(ball: EditableBall): void {
+     ball.shadow.setPosition(
+       ball.shape.x + ball.definition.radius * 0.14,
+@@ -1705,12 +1728,23 @@ export class PrototypeScene extends Phaser.Scene {
+   private updateBlockSurface(
+     block: EditableBlock,
+     position: { x: number; y: number },
++    rotation = 0,
+   ): void {
+-    block.shadow.setPosition(position.x + 3, position.y + 4);
+-    block.highlight.setPosition(
+-      position.x,
+-      position.y - block.definition.height * 0.32,
+-    );
++    const sine = Math.sin(rotation);
++    const cosine = Math.cos(rotation);
++    const highlightOffset = block.definition.height * 0.32;
++    block.shadow
++      .setPosition(
++        position.x + 3 * cosine - 4 * sine,
++        position.y + 3 * sine + 4 * cosine,
++      )
++      .setRotation(rotation);
++    block.highlight
++      .setPosition(
++        position.x + highlightOffset * sine,
++        position.y - highlightOffset * cosine,
++      )
++      .setRotation(rotation);
+   }
+ 
+   private drawGoalCup(goal: LevelDefinition["goal"]): void {
+diff --git a/src/game/headlessSimulation.ts b/src/game/headlessSimulation.ts
+index 7149b25..1cb4999 100644
+--- a/src/game/headlessSimulation.ts
++++ b/src/game/headlessSimulation.ts
+@@ -27,6 +27,7 @@ interface MatterVector {
+ interface MatterBody {
+   readonly position: MatterVector;
+   readonly velocity: MatterVector;
++  readonly angle: number;
+   ignoreGravity: boolean;
+ }
+ 
+@@ -124,15 +125,31 @@ export type SimulationEvent =
+   | { type: "goal"; tick: number; ballId: string }
+   | { type: "max-ticks"; tick: number };
+ 
++export interface SimulationBodyState {
++  id: string;
++  tag: ContactTag;
++  x: number;
++  y: number;
++  angle: number;
++}
++
+ export interface SimulationResult {
+   solved: boolean;
+   ticks: number;
+   events: readonly SimulationEvent[];
++  /**
++   * Terminal transform of every body still present at the end of the run, in
++   * registration order. Lets headless verification assert dynamic outcomes such
++   * as a Block's toppling angle or motion transferred to a neighbour, and makes
++   * deterministic replay checkable via a single structural comparison.
++   */
++  bodies: readonly SimulationBodyState[];
+ }
+ 
+ interface RegisteredBody extends ContactParticipant {
+   body: MatterBody;
+   id: string;
++  tag: ContactTag;
+ }
+ 
+ interface SimulatedActor {
+@@ -283,8 +300,11 @@ export function simulate(
+       block.y,
+       block.width,
+       block.height,
+-      { isStatic: true, label: `block:${block.id}` },
++      { isStatic: block.dynamic !== true, label: `block:${block.id}` },
+     );
++    if (block.rotation !== undefined) {
++      Matter.Body.setAngle(body, block.rotation);
++    }
+     add(body);
+     register(body, "block", block.id);
+   }
+@@ -375,5 +395,17 @@ export function simulate(
+   }
+ 
+   if (!solved) events.push({ type: "max-ticks", tick });
+-  return { solved, ticks: tick, events };
++
++  const bodyStates: SimulationBodyState[] = [];
++  for (const registered of bodies.values()) {
++    bodyStates.push({
++      id: registered.id,
++      tag: registered.tag,
++      x: registered.body.position.x,
++      y: registered.body.position.y,
++      angle: registered.body.angle,
++    });
++  }
++
++  return { solved, ticks: tick, events, bodies: bodyStates };
+ }
+diff --git a/src/levels/levelTypes.ts b/src/levels/levelTypes.ts
+index 54d3996..fcd649a 100644
+--- a/src/levels/levelTypes.ts
++++ b/src/levels/levelTypes.ts
+@@ -19,7 +19,20 @@ export interface RampDefinition extends LevelPartDefinition {
+   rotation: number;
+ }
+ 
+-export type BlockDefinition = LevelPartDefinition;
++export interface BlockDefinition extends LevelPartDefinition {
++  /**
++   * When true, the Block participates as a Matter dynamic rigid body that can
++   * rotate/topple and transfer motion. Omitted or false keeps the historical
++   * static Block behavior, so existing levels are unchanged.
++   */
++  dynamic?: boolean;
++  /**
++   * Initial rotation in radians (same convention as {@link RampDefinition}).
++   * Omitted means an upright, axis-aligned Block (0). This is explicit
++   * gameplay geometry and is independent of any artwork silhouette.
++   */
++  rotation?: number;
++}
+ 
+ export interface BallDefinition extends Point {
+   id: string;
+diff --git a/src/levels/validateLevel.ts b/src/levels/validateLevel.ts
+index 756ceee..3f8e0ab 100644
+--- a/src/levels/validateLevel.ts
++++ b/src/levels/validateLevel.ts
+@@ -61,7 +61,9 @@ const isBlock = (value: unknown): value is BlockDefinition =>
+   isRectangle(value) &&
+   typeof value.id === "string" &&
+   value.id.trim() !== "" &&
+-  (value.ownership === "fixed" || value.ownership === "player");
++  (value.ownership === "fixed" || value.ownership === "player") &&
++  (value.dynamic === undefined || typeof value.dynamic === "boolean") &&
++  (value.rotation === undefined || isFiniteNumber(value.rotation));
+ 
+ const isInventory = (value: unknown): value is InventoryDefinition =>
+   isRecord(value) &&
+diff --git a/tests/dynamicBlock.test.ts b/tests/dynamicBlock.test.ts
+new file mode 100644
+index 0000000..c5c73b7
+--- /dev/null
++++ b/tests/dynamicBlock.test.ts
+@@ -0,0 +1,350 @@
++import { describe, expect, it } from "vitest";
++import {
++  isEditablePart,
++  isPlayerPart,
++  type BlockDefinition,
++  type LevelDefinition,
++} from "../src/levels/levelTypes";
++import { validateLevel } from "../src/levels/validateLevel";
++import {
++  simulate,
++  type SimulationBodyState,
++} from "../src/game/headlessSimulation";
++
++/**
++ * Focused coverage for milestone #28 (dynamic/toppling Block capability).
++ *
++ * Deterministic verification lives in the headless runner: a dynamic Block is a
++ * Matter dynamic rigid body whose toppling geometry is explicit gameplay data
++ * (width/height/rotation), independent of any artwork. The runner exposes each
++ * body's terminal transform so toppling, motion transfer, Reset (initial-state
++ * reconstruction), and deterministic repeat/Rerun replay are all checkable.
++ */
++
++const FLOOR = { x: 480, y: 530, width: 960, height: 20 } as const; // top surface y = 520
++const UNREACHABLE_GOAL = { x: 60, y: 60, width: 40, height: 40 } as const;
++
++/** A harmless fixed Ball parked on the floor so `validateLevel` has its >=1 ball. */
++const PARKED_BALL = {
++  id: "parked-ball",
++  x: 900,
++  y: 480,
++  radius: 20,
++  ownership: "fixed",
++} as const;
++
++function buildLevel(
++  blocks: readonly BlockDefinition[],
++  overrides: Partial<LevelDefinition> = {},
++): LevelDefinition {
++  return validateLevel({
++    id: "dynamic-block-fixture",
++    levelName: "Dynamic Block Fixture",
++    title: "Dynamic Block Fixture",
++    difficulty: "Basic",
++    order: 1,
++    inventory: { ball: 0, bird: 0, block: 0, ramp: 0 },
++    contactRules: [],
++    actors: [],
++    balls: [{ ...PARKED_BALL }],
++    ramps: [],
++    blocks: blocks.map((block) => ({ ...block })),
++    floor: { ...FLOOR },
++    goal: { ...UNREACHABLE_GOAL },
++    gravity: { x: 0, y: 1 },
++    ...overrides,
++  });
++}
++
++function findBody(
++  result: { bodies: readonly SimulationBodyState[] },
++  id: string,
++): SimulationBodyState {
++  const body = result.bodies.find((candidate) => candidate.id === id);
++  if (!body) throw new Error(`Expected a terminal body for "${id}".`);
++  return body;
++}
++
++describe("dynamic Block schema & validation", () => {
++  it("accepts and preserves dynamic + rotation fields", () => {
++    const level = buildLevel([
++      {
++        id: "spinner",
++        x: 300,
++        y: 300,
++        width: 24,
++        height: 160,
++        ownership: "fixed",
++        dynamic: true,
++        rotation: 0.3,
++      },
++    ]);
++
++    expect(level.blocks[0]).toMatchObject({ dynamic: true, rotation: 0.3 });
++  });
++
++  it("treats a legacy Block with neither field as valid (static default)", () => {
++    const level = buildLevel([
++      {
++        id: "legacy",
++        x: 300,
++        y: 300,
++        width: 120,
++        height: 40,
++        ownership: "fixed",
++      },
++    ]);
++
++    const block = level.blocks.at(0);
++    if (!block) throw new Error("Expected the legacy block to be present.");
++    expect(block.dynamic).toBeUndefined();
++    expect(block.rotation).toBeUndefined();
++  });
++
++  it("rejects a non-boolean dynamic flag", () => {
++    expect(() =>
++      buildLevel([
++        {
++          id: "bad-dynamic",
++          x: 300,
++          y: 300,
++          width: 24,
++          height: 160,
++          ownership: "fixed",
++          // @ts-expect-error deliberately invalid dynamic value
++          dynamic: "yes",
++        },
++      ]),
++    ).toThrow(/blocks/);
++  });
++
++  it("rejects a non-finite rotation", () => {
++    expect(() =>
++      buildLevel([
++        {
++          id: "bad-rotation",
++          x: 300,
++          y: 300,
++          width: 24,
++          height: 160,
++          ownership: "fixed",
++          // @ts-expect-error deliberately invalid rotation value
++          rotation: "sideways",
++        },
++      ]),
++    ).toThrow(/blocks/);
++  });
++});
++
++describe("dynamic Block ownership & inventory", () => {
++  it("is orthogonal to ownership (fixed and player both validate and are preserved)", () => {
++    const level = buildLevel([
++      {
++        id: "fixed-dynamic",
++        x: 250,
++        y: 300,
++        width: 24,
++        height: 160,
++        ownership: "fixed",
++        dynamic: true,
++      },
++      {
++        id: "player-dynamic",
++        x: 650,
++        y: 300,
++        width: 24,
++        height: 160,
++        ownership: "player",
++        dynamic: true,
++      },
++    ]);
++
++    expect(level.blocks).toMatchObject([
++      { id: "fixed-dynamic", ownership: "fixed", dynamic: true },
++      { id: "player-dynamic", ownership: "player", dynamic: true },
++    ]);
++  });
++
++  it("does not change ownership/editability classification", () => {
++    const fixed = { ownership: "fixed" as const, dynamic: true };
++    const player = { ownership: "player" as const, dynamic: true };
++
++    expect(isPlayerPart(fixed)).toBe(false);
++    expect(isPlayerPart(player)).toBe(true);
++    expect(isEditablePart(fixed, false)).toBe(false);
++    expect(isEditablePart(fixed, true)).toBe(true);
++    expect(isEditablePart(player, false)).toBe(true);
++  });
++
++  it("does not consume Block inventory (inventory is preserved as declared)", () => {
++    const level = buildLevel(
++      [
++        {
++          id: "fixed-dynamic",
++          x: 300,
++          y: 300,
++          width: 24,
++          height: 160,
++          ownership: "fixed",
++          dynamic: true,
++        },
++      ],
++      { inventory: { ball: 0, bird: 0, block: 2, ramp: 0 } },
++    );
++
++    expect(level.inventory.block).toBe(2);
++  });
++});
++
++describe("dynamic Block headless behavior", () => {
++  it("leaves a static (default) Block exactly in place under gravity", () => {
++    const level = buildLevel([
++      {
++        id: "static-block",
++        x: 300,
++        y: 300,
++        width: 120,
++        height: 40,
++        ownership: "fixed",
++      },
++    ]);
++
++    const terminal = findBody(
++      simulate(level, {}, { maxTicks: 300 }),
++      "static-block",
++    );
++
++    expect(terminal).toEqual({
++      id: "static-block",
++      tag: "block",
++      x: 300,
++      y: 300,
++      angle: 0,
++    });
++  });
++
++  it("topples a Block leaning past its critical angle", () => {
++    const initialY = 440;
++    const initialRotation = 0.5;
++    const level = buildLevel([
++      {
++        id: "leaning-block",
++        x: 300,
++        y: initialY,
++        width: 24,
++        height: 160,
++        ownership: "fixed",
++        dynamic: true,
++        rotation: initialRotation,
++      },
++    ]);
++
++    const terminal = findBody(
++      simulate(level, {}, { maxTicks: 600 }),
++      "leaning-block",
++    );
++
++    // Falls further over (toward lying flat) and settles lower on the floor.
++    expect(terminal.angle).toBeGreaterThan(initialRotation + 0.3);
++    expect(terminal.y).toBeGreaterThan(initialY);
++  });
++
++  it("transfers motion to a neighbouring dynamic Block (chain/topple)", () => {
++    const bInitialX = 520;
++    const bInitialY = 500;
++    const level = buildLevel([
++      {
++        id: "a",
++        x: 380,
++        y: 420,
++        width: 20,
++        height: 200,
++        ownership: "fixed",
++        dynamic: true,
++        rotation: 0.5,
++      },
++      {
++        id: "b",
++        x: bInitialX,
++        y: bInitialY,
++        width: 40,
++        height: 40,
++        ownership: "fixed",
++        dynamic: true,
++      },
++    ]);
++
++    const result = simulate(level, {}, { maxTicks: 600 });
++
++    const contact = result.events.find(
++      (event) =>
++        event.type === "contact" &&
++        event.participants[0] === "block:a" &&
++        event.participants[1] === "block:b",
++    );
++    expect(contact, "expected a block:a<->block:b contact").toBeDefined();
++    expect((contact as { tick: number }).tick).toBeGreaterThan(0);
++
++    const b = findBody(result, "b");
++    const displacement =
++      Math.hypot(b.x - bInitialX, b.y - bInitialY) + Math.abs(b.angle);
++    expect(displacement).toBeGreaterThan(3);
++  });
++
++  it("produces identical results and terminal transforms on repeat runs (deterministic Rerun replay)", () => {
++    const blocks: readonly BlockDefinition[] = [
++      {
++        id: "a",
++        x: 380,
++        y: 420,
++        width: 20,
++        height: 200,
++        ownership: "fixed",
++        dynamic: true,
++        rotation: 0.5,
++      },
++      {
++        id: "b",
++        x: 520,
++        y: 500,
++        width: 40,
++        height: 40,
++        ownership: "fixed",
++        dynamic: true,
++      },
++    ];
++
++    const first = simulate(buildLevel(blocks), {}, { maxTicks: 600 });
++    const second = simulate(buildLevel(blocks), {}, { maxTicks: 600 });
++
++    expect(first).toEqual(second);
++  });
++
++  it("reconstructs the exact initial JSON transform for Reset (no stepping)", () => {
++    const level = buildLevel([
++      {
++        id: "leaning-block",
++        x: 300,
++        y: 440,
++        width: 24,
++        height: 160,
++        ownership: "fixed",
++        dynamic: true,
++        rotation: 0.5,
++      },
++    ]);
++
++    const initial = findBody(
++      simulate(level, {}, { maxTicks: 0 }),
++      "leaning-block",
++    );
++
++    expect(initial).toEqual({
++      id: "leaning-block",
++      tag: "block",
++      x: 300,
++      y: 440,
++      angle: 0.5,
++    });
++  });
++});
