@@ -165,8 +165,277 @@ index e958789..1f1eee1 100644
 +
 +Then print the same complete final response in the Codex terminal and STOP.
 +Do not commit or push contraption-lab.
+diff --git a/e2e/puzzle.e2e.ts b/e2e/puzzle.e2e.ts
+index 582ff2d..5cb26b5 100644
+--- a/e2e/puzzle.e2e.ts
++++ b/e2e/puzzle.e2e.ts
+@@ -1600,6 +1600,264 @@ test("Rerun restores fresh Run-start Ball physics and Reset restores JSON", asyn
+   expectNoConsoleErrors(app);
+ });
+ 
++test("normalizes dynamic Blocks through Edit before runtime Rerun", async ({
++  page,
++}) => {
++  const app = await startApp(page);
++  const initialStaticBlock = await page.evaluate(() => {
++    const scene =
++      window.__contraptionLabTest?.getPrototypeScene() as unknown as {
++        blocks: Map<
++          string,
++          {
++            shape: {
++              body?: { isStatic: boolean };
++              x: number;
++              y: number;
++            };
++          }
++        >;
++        createBlock: (definition: {
++          dynamic: boolean;
++          height: number;
++          id: string;
++          ownership: "fixed";
++          rotation: number;
++          width: number;
++          x: number;
++          y: number;
++        }) => void;
++      };
++    if (!scene) throw new Error("Prototype scene test hook is unavailable.");
++    scene.createBlock({
++      dynamic: true,
++      height: 80,
++      id: "runtime-dynamic-block",
++      ownership: "fixed",
++      rotation: 0.2,
++      width: 32,
++      x: 420,
++      y: 220,
++    });
++    const guideBlock = scene.blocks.get("guide-block");
++    if (!guideBlock?.shape.body)
++      throw new Error("Static Block is unavailable.");
++    return {
++      isStatic: guideBlock.shape.body.isStatic,
++      x: guideBlock.shape.x,
++      y: guideBlock.shape.y,
++    };
++  });
++  expect(initialStaticBlock).toEqual({ isStatic: true, x: 850, y: 150 });
++
++  await app.simulation.click();
++  await expect(app.mode).toHaveText("Mode: Running");
++  const movingBlock = await page.evaluate(() => {
++    const scene =
++      window.__contraptionLabTest?.getPrototypeScene() as unknown as {
++        blocks: Map<
++          string,
++          {
++            shape: {
++              body?: {
++                angularVelocity: number;
++                velocity: { x: number; y: number };
++              };
++              setAngularVelocity: (velocity: number) => void;
++              setVelocity: (x: number, y: number) => void;
++              x: number;
++              y: number;
++            };
++          }
++        >;
++        matter: { world: { step: (delta: number) => void } };
++      };
++    const block = scene?.blocks.get("runtime-dynamic-block");
++    if (!block?.shape.body) throw new Error("Dynamic Block is unavailable.");
++    block.shape.setVelocity(8, -3);
++    block.shape.setAngularVelocity(0.15);
++    scene.matter.world.step(1000 / 60);
++    return {
++      angularVelocity: block.shape.body.angularVelocity,
++      velocity: { ...block.shape.body.velocity },
++      x: block.shape.x,
++      y: block.shape.y,
++    };
++  });
++  expect(
++    Math.hypot(movingBlock.velocity.x, movingBlock.velocity.y),
++  ).toBeGreaterThan(0);
++  expect(movingBlock.angularVelocity).not.toBe(0);
++
++  await page.getByRole("button", { name: "Edit" }).click();
++  await expect(app.mode).toHaveText("Mode: Edit");
++  const editRestState = await page.evaluate(() => {
++    const scene =
++      window.__contraptionLabTest?.getPrototypeScene() as unknown as {
++        blocks: Map<
++          string,
++          {
++            shape: {
++              body?: {
++                angularVelocity: number;
++                velocity: { x: number; y: number };
++              };
++            };
++          }
++        >;
++      };
++    const block = scene?.blocks.get("runtime-dynamic-block");
++    if (!block?.shape.body) throw new Error("Dynamic Block is unavailable.");
++    return {
++      angularVelocity: block.shape.body.angularVelocity,
++      velocity: { ...block.shape.body.velocity },
++    };
++  });
++  expect(editRestState).toEqual({
++    angularVelocity: 0,
++    velocity: { x: 0, y: 0 },
++  });
++
++  await app.simulation.click();
++  await expect(app.mode).toHaveText("Mode: Running");
++  const rerunSnapshot = await page.evaluate(() => {
++    const scene =
++      window.__contraptionLabTest?.getPrototypeScene() as unknown as {
++        blocks: Map<
++          string,
++          {
++            shape: {
++              setAngularVelocity: (velocity: number) => void;
++              setVelocity: (x: number, y: number) => void;
++            };
++          }
++        >;
++        matter: { world: { step: (delta: number) => void } };
++        runSnapshot?: {
++          parts: Array<{
++            componentType: "block";
++            definition: { id: string; rotation: number; x: number; y: number };
++          }>;
++        };
++      };
++    const block = scene?.blocks.get("runtime-dynamic-block");
++    const snapshot = scene?.runSnapshot?.parts.find(
++      (part) =>
++        part.componentType === "block" &&
++        part.definition.id === "runtime-dynamic-block",
++    );
++    if (!block || !snapshot) throw new Error("Run snapshot is unavailable.");
++    block.shape.setVelocity(-6, 5);
++    block.shape.setAngularVelocity(-0.12);
++    scene.matter.world.step(1000 / 60);
++    return snapshot.definition;
++  });
++
++  await page.evaluate(() => {
++    const scene =
++      window.__contraptionLabTest?.getPrototypeScene() as unknown as {
++        blocks: Map<
++          string,
++          {
++            shape: {
++              body?: {
++                angularVelocity: number;
++                velocity: { x: number; y: number };
++              };
++              rotation: number;
++              x: number;
++              y: number;
++            };
++          }
++        >;
++        rerunFromSnapshot: () => boolean;
++      };
++    if (!scene) throw new Error("Prototype scene test hook is unavailable.");
++    const originalRerun = scene.rerunFromSnapshot;
++    scene.rerunFromSnapshot = () => {
++      const restored = originalRerun.call(scene);
++      const block = scene.blocks.get("runtime-dynamic-block");
++      if (!block?.shape.body)
++        throw new Error("Restored Dynamic Block is unavailable.");
++      (
++        window as typeof window & {
++          __dynamicBlockRerunTrace?: {
++            angularVelocity: number;
++            rotation: number;
++            velocity: { x: number; y: number };
++            x: number;
++            y: number;
++          };
++        }
++      ).__dynamicBlockRerunTrace = {
++        angularVelocity: block.shape.body.angularVelocity,
++        rotation: block.shape.rotation,
++        velocity: { ...block.shape.body.velocity },
++        x: block.shape.x,
++        y: block.shape.y,
++      };
++      return restored;
++    };
++  });
++  await page.getByRole("button", { name: "Rerun" }).click();
++  const restoredRunStart = await page.evaluate(() => {
++    const trace = (
++      window as typeof window & {
++        __dynamicBlockRerunTrace?: {
++          angularVelocity: number;
++          rotation: number;
++          velocity: { x: number; y: number };
++          x: number;
++          y: number;
++        };
++      }
++    ).__dynamicBlockRerunTrace;
++    if (!trace) throw new Error("Rerun trace is unavailable.");
++    return trace;
++  });
++  expect(restoredRunStart).toEqual({
++    angularVelocity: 0,
++    rotation: rerunSnapshot.rotation,
++    velocity: { x: 0, y: 0 },
++    x: rerunSnapshot.x,
++    y: rerunSnapshot.y,
++  });
++
++  await page.getByRole("button", { name: "Reset" }).click();
++  await expect(app.mode).toHaveText("Mode: Edit");
++  const resetState = await page.evaluate(() => {
++    const scene =
++      window.__contraptionLabTest?.getPrototypeScene() as unknown as {
++        blocks: Map<
++          string,
++          {
++            shape: {
++              body?: { isStatic: boolean };
++              x: number;
++              y: number;
++            };
++          }
++        >;
++      };
++    const guideBlock = scene?.blocks.get("guide-block");
++    if (!guideBlock?.shape.body)
++      throw new Error("Reset static Block is unavailable.");
++    return {
++      dynamicBlockPresent: scene.blocks.has("runtime-dynamic-block"),
++      guideBlock: {
++        isStatic: guideBlock.shape.body.isStatic,
++        x: guideBlock.shape.x,
++        y: guideBlock.shape.y,
++      },
++    };
++  });
++  expect(resetState).toEqual({
++    dynamicBlockPresent: false,
++    guideBlock: initialStaticBlock,
++  });
++  expectNoConsoleErrors(app);
++});
++
+ test("rejects overlapping player-part edits", async ({ page }) => {
+   const app = await startApp(page);
+ 
 diff --git a/src/game/PrototypeScene.ts b/src/game/PrototypeScene.ts
-index 0aef439..dfbc8f7 100644
+index 0aef439..5522673 100644
 --- a/src/game/PrototypeScene.ts
 +++ b/src/game/PrototypeScene.ts
 @@ -329,6 +329,7 @@ export class PrototypeScene extends Phaser.Scene {
@@ -177,7 +446,18 @@ index 0aef439..dfbc8f7 100644
  
        if (!this.simulationRunning) return;
        if (this.level.timeLimitSeconds !== undefined) {
-@@ -395,6 +396,11 @@ export class PrototypeScene extends Phaser.Scene {
+@@ -367,8 +368,10 @@ export class PrototypeScene extends Phaser.Scene {
+   }
+ 
+   setEditSelection(enabled: boolean, selectedComponentId: string | null): void {
++    const enteringEdit = enabled && !this.editInteractionEnabled;
+     this.editInteractionEnabled = enabled;
+     this.selectedComponentId = selectedComponentId;
++    if (enteringEdit) this.normalizeDynamicBlocksForEdit();
+     if (!enabled) this.lastComponentClick = undefined;
+     this.updateSelectionDisplay();
+   }
+@@ -395,6 +398,11 @@ export class PrototypeScene extends Phaser.Scene {
    ): void {
      for (const block of this.blocks.values()) {
        if (!block.editable) continue;
@@ -189,7 +469,7 @@ index 0aef439..dfbc8f7 100644
        const position =
          transforms[block.definition.id]?.position ?? block.definition;
        this.updateBlockPosition(
-@@ -535,6 +541,11 @@ export class PrototypeScene extends Phaser.Scene {
+@@ -535,6 +543,11 @@ export class PrototypeScene extends Phaser.Scene {
              ...block.definition,
              x: block.shape.x,
              y: block.shape.y,
@@ -201,7 +481,7 @@ index 0aef439..dfbc8f7 100644
            },
            fromTray: block.fromTray,
          })),
-@@ -832,6 +843,8 @@ export class PrototypeScene extends Phaser.Scene {
+@@ -832,6 +845,8 @@ export class PrototypeScene extends Phaser.Scene {
  
    private createBlock(definition: BlockDefinition, fromTray = false): void {
      const editable = isEditablePart(definition, fromTray);
@@ -210,7 +490,7 @@ index 0aef439..dfbc8f7 100644
      const highlightColor = editable
        ? WOOD_HIGHLIGHT_COLOR
        : FIXED_HIGHLIGHT_COLOR;
-@@ -858,6 +871,7 @@ export class PrototypeScene extends Phaser.Scene {
+@@ -858,6 +873,7 @@ export class PrototypeScene extends Phaser.Scene {
          4,
          editable ? BLOCK_STROKE_COLOR : FIXED_BLOCK_STROKE_COLOR,
        )
@@ -218,7 +498,7 @@ index 0aef439..dfbc8f7 100644
        .setDepth(1);
      const highlight = this.add
        .rectangle(
-@@ -870,7 +884,7 @@ export class PrototypeScene extends Phaser.Scene {
+@@ -870,9 +886,11 @@ export class PrototypeScene extends Phaser.Scene {
        )
        .setDepth(2);
      this.matter.add.gameObject(shape, {
@@ -226,8 +506,12 @@ index 0aef439..dfbc8f7 100644
 +      isStatic: !isDynamic,
        label: `block:${definition.id}`,
      });
++    const body = shape.body as MatterJS.BodyType | undefined;
++    if (body) this.matter.body.setAngle(body, rotation);
  
-@@ -916,7 +930,7 @@ export class PrototypeScene extends Phaser.Scene {
+     const selectionText = this.add
+       .text(definition.x, definition.y - 34, "BLOCK SELECTED", {
+@@ -916,7 +934,7 @@ export class PrototypeScene extends Phaser.Scene {
        shape,
        selectionText,
      };
@@ -236,7 +520,7 @@ index 0aef439..dfbc8f7 100644
      this.blocks.set(definition.id, block);
      this.editableComponents.set(definition.id, block);
      this.registerContactObject(shape, "block", definition.id, () =>
-@@ -1673,6 +1687,15 @@ export class PrototypeScene extends Phaser.Scene {
+@@ -1673,6 +1691,30 @@ export class PrototypeScene extends Phaser.Scene {
      for (const ball of this.balls.values()) this.updateBallHighlight(ball);
    }
  
@@ -249,10 +533,25 @@ index 0aef439..dfbc8f7 100644
 +    }
 +  }
 +
++  /**
++   * Edit mode is a rest-state boundary for dynamic Blocks. Their transforms
++   * remain editable, but a subsequent Run always starts without residual
++   * linear or angular motion from the previous simulation.
++   */
++  private normalizeDynamicBlocksForEdit(): void {
++    for (const block of this.blocks.values()) {
++      if (block.definition.dynamic !== true) continue;
++      const body = block.shape.body as MatterJS.BodyType | undefined;
++      if (!body) continue;
++      this.matter.body.setVelocity(body, { x: 0, y: 0 });
++      this.matter.body.setAngularVelocity(body, 0);
++    }
++  }
++
    private updateBallHighlight(ball: EditableBall): void {
      ball.shadow.setPosition(
        ball.shape.x + ball.definition.radius * 0.14,
-@@ -1705,12 +1728,23 @@ export class PrototypeScene extends Phaser.Scene {
+@@ -1705,12 +1747,23 @@ export class PrototypeScene extends Phaser.Scene {
    private updateBlockSurface(
      block: EditableBlock,
      position: { x: number; y: number },
