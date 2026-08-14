@@ -178,80 +178,23 @@ index 5522673..3cd49b1 100644
    setSimulationRunning(running: boolean): void {
      if (this.simulationRunning !== running) this.simulationAccumulatorMs = 0;
      this.simulationRunning = running;
-diff --git a/src/levels/bridgeTheGap.json b/src/levels/bridgeTheGap.json
-index 509b02f..8274927 100644
---- a/src/levels/bridgeTheGap.json
-+++ b/src/levels/bridgeTheGap.json
-@@ -5,7 +5,14 @@
-   "difficulty": "Basic",
-   "order": 5,
-   "timeLimitSeconds": 12,
--  "inventory": { "ball": 0, "bird": 0, "block": 0, "ramp": 2 },
-+  "inventory": {
-+    "ball": 0,
-+    "bird": 0,
-+    "block": 0,
-+    "ramp": 2,
-+    "mattress": 0,
-+    "teapot": 0
-+  },
-   "contactRules": [],
-   "actors": [],
-   "balls": [
-diff --git a/src/levels/downTheRamp.json b/src/levels/downTheRamp.json
-index cb091a0..bfd6a94 100644
---- a/src/levels/downTheRamp.json
-+++ b/src/levels/downTheRamp.json
-@@ -5,7 +5,14 @@
-   "difficulty": "Basic",
-   "order": 4,
-   "timeLimitSeconds": 10,
--  "inventory": { "ball": 0, "bird": 0, "block": 0, "ramp": 2 },
-+  "inventory": {
-+    "ball": 0,
-+    "bird": 0,
-+    "block": 0,
-+    "ramp": 2,
-+    "mattress": 0,
-+    "teapot": 0
-+  },
-   "contactRules": [],
-   "actors": [],
-   "balls": [
-diff --git a/src/levels/hard.json b/src/levels/hard.json
-index 8aabf53..b7d9e7e 100644
---- a/src/levels/hard.json
-+++ b/src/levels/hard.json
-@@ -5,7 +5,14 @@
-   "difficulty": "Hard",
-   "order": 3,
-   "timeLimitSeconds": 30,
--  "inventory": { "ball": 0, "bird": 0, "block": 0, "ramp": 2 },
-+  "inventory": {
-+    "ball": 0,
-+    "bird": 0,
-+    "block": 0,
-+    "ramp": 2,
-+    "mattress": 0,
-+    "teapot": 0
-+  },
-   "contactRules": [
-     {
-       "contacts": ["ball", "block"],
 diff --git a/src/levels/levelTypes.ts b/src/levels/levelTypes.ts
-index fcd649a..c143737 100644
+index fcd649a..83ef4dd 100644
 --- a/src/levels/levelTypes.ts
 +++ b/src/levels/levelTypes.ts
-@@ -1,3 +1,8 @@
-+import type { ContactTag, InventoryPartKey } from "./partRegistry";
+@@ -1,3 +1,11 @@
++import type {
++  ContactTag,
++  InventoryDefinition as RegistryInventoryDefinition,
++} from "./partRegistry";
 +
 +export { CONTACT_TAGS } from "./partRegistry";
-+export type { ContactTag } from "./partRegistry";
++export type { CompleteInventoryDefinition, ContactTag } from "./partRegistry";
 +
  export interface Point {
    x: number;
    y: number;
-@@ -41,27 +46,11 @@ export interface BallDefinition extends Point {
+@@ -41,27 +49,11 @@ export interface BallDefinition extends Point {
    ownership: PartOwnership;
  }
  
@@ -261,7 +204,7 @@ index fcd649a..c143737 100644
 -  block: number;
 -  ramp: number;
 -}
-+export type InventoryDefinition = Record<InventoryPartKey, number>;
++export type InventoryDefinition = RegistryInventoryDefinition;
  
  export const PUZZLE_DIFFICULTIES = ["Basic", "Medium", "Hard"] as const;
  export type PuzzleDifficulty = (typeof PUZZLE_DIFFICULTIES)[number];
@@ -280,48 +223,8 @@ index fcd649a..c143737 100644
  export interface ContactParticipantByRole {
    type: "contact";
    index: 0 | 1;
-diff --git a/src/levels/medium.json b/src/levels/medium.json
-index da1a286..fd40863 100644
---- a/src/levels/medium.json
-+++ b/src/levels/medium.json
-@@ -4,7 +4,14 @@
-   "title": "Relay Shift",
-   "difficulty": "Medium",
-   "order": 2,
--  "inventory": { "ball": 0, "bird": 0, "block": 1, "ramp": 2 },
-+  "inventory": {
-+    "ball": 0,
-+    "bird": 0,
-+    "block": 1,
-+    "ramp": 2,
-+    "mattress": 0,
-+    "teapot": 0
-+  },
-   "contactRules": [
-     {
-       "contacts": ["ball", "block"],
-diff --git a/src/levels/prototype.json b/src/levels/prototype.json
-index cc5037e..0171de4 100644
---- a/src/levels/prototype.json
-+++ b/src/levels/prototype.json
-@@ -5,7 +5,14 @@
-   "difficulty": "Basic",
-   "order": 1,
-   "timeLimitSeconds": 45,
--  "inventory": { "ball": 0, "bird": 0, "block": 2, "ramp": 4 },
-+  "inventory": {
-+    "ball": 0,
-+    "bird": 0,
-+    "block": 2,
-+    "ramp": 4,
-+    "mattress": 0,
-+    "teapot": 0
-+  },
-   "contactRules": [
-     {
-       "contacts": ["ball", "block"],
 diff --git a/src/levels/validateLevel.ts b/src/levels/validateLevel.ts
-index 3f8e0ab..d678e92 100644
+index 3f8e0ab..7eef346 100644
 --- a/src/levels/validateLevel.ts
 +++ b/src/levels/validateLevel.ts
 @@ -15,7 +15,8 @@ import type {
@@ -330,7 +233,7 @@ index 3f8e0ab..d678e92 100644
  } from "./levelTypes";
 -import { CONTACT_TAGS, PUZZLE_DIFFICULTIES } from "./levelTypes";
 +import { PUZZLE_DIFFICULTIES } from "./levelTypes";
-+import { INVENTORY_PART_KEYS, isContactTag } from "./partRegistry";
++import { isContactTag, isInventoryPartKey } from "./partRegistry";
  
  const isRecord = (value: unknown): value is Record<string, unknown> =>
    typeof value === "object" && value !== null && !Array.isArray(value);
@@ -350,12 +253,12 @@ index 3f8e0ab..d678e92 100644
 -  isFiniteNumber(value.ramp) &&
 -  Number.isInteger(value.ramp) &&
 -  value.ramp >= 0;
-+  Object.keys(value).length === INVENTORY_PART_KEYS.length &&
-+  INVENTORY_PART_KEYS.every(
-+    (key) =>
-+      isFiniteNumber(value[key]) &&
-+      Number.isInteger(value[key]) &&
-+      value[key] >= 0,
++  Object.entries(value).every(
++    ([key, count]) =>
++      isInventoryPartKey(key) &&
++      isFiniteNumber(count) &&
++      Number.isInteger(count) &&
++      count >= 0,
 +  );
  
  const isTimeLimitSeconds = (value: unknown): value is number =>
@@ -375,10 +278,28 @@ index 3f8e0ab..d678e92 100644
    if (!isInventory(inventory)) {
      throw new Error(
 -      "Level inventory must define non-negative integer ball, bird, block, and ramp counts.",
-+      "Level inventory must define each registered part with a non-negative integer count.",
++      "Level inventory must contain only registered parts with non-negative integer counts.",
      );
    }
    const validatedContactRules = validateContactRules(contactRules);
+@@ -357,7 +350,7 @@ export function validateLevel(value: unknown): LevelDefinition {
+   const unplacedPlayerBirds = validatedActors.filter(
+     (actor) => actor.ownership === "player" && actor.initiallyPlaced === false,
+   );
+-  if (inventory.bird !== unplacedPlayerBirds.length) {
++  if ((inventory.bird ?? 0) !== unplacedPlayerBirds.length) {
+     throw new Error(
+       "Bird inventory must equal the number of initially unplaced player-owned Birds.",
+     );
+@@ -378,7 +371,7 @@ export function validateLevel(value: unknown): LevelDefinition {
+   const unplacedPlayerBalls = balls.filter(
+     (ball) => ball.ownership === "player" && ball.initiallyPlaced === false,
+   );
+-  if (inventory.ball !== unplacedPlayerBalls.length) {
++  if ((inventory.ball ?? 0) !== unplacedPlayerBalls.length) {
+     throw new Error(
+       "Ball inventory must equal the number of initially unplaced player-owned Balls.",
+     );
 diff --git a/src/main.ts b/src/main.ts
 index b1bbdee..db5bfb9 100644
 --- a/src/main.ts
@@ -402,23 +323,37 @@ index b1bbdee..db5bfb9 100644
  
    game = new Phaser.Game({
 diff --git a/src/state/gameState.ts b/src/state/gameState.ts
-index b221bd7..5d9fef3 100644
+index b221bd7..af2dc38 100644
 --- a/src/state/gameState.ts
 +++ b/src/state/gameState.ts
-@@ -1,4 +1,5 @@
- import type { InventoryDefinition, Point } from "../levels/levelTypes";
+@@ -1,4 +1,9 @@
+-import type { InventoryDefinition, Point } from "../levels/levelTypes";
++import type {
++  CompleteInventoryDefinition,
++  InventoryDefinition,
++  Point,
++} from "../levels/levelTypes";
 +import { createEmptyInventory } from "../levels/partRegistry";
  
  export type GameMode = "edit" | "running" | "paused" | "failed";
  export const TRAY_BLOCK_ID = "tray-block-1";
-@@ -101,17 +102,11 @@ export interface GameState {
+@@ -83,7 +88,7 @@ export type GameAction =
+   | AdvanceTimeAction;
+ 
+ export interface GameState {
+-  initialInventory: InventoryDefinition;
++  initialInventory: CompleteInventoryDefinition;
+   initialBallTransforms: Record<string, BallTransform>;
+   mode: GameMode;
+   succeeded: boolean;
+@@ -101,17 +106,11 @@ export interface GameState {
  }
  
  export function createInitialGameState(
 -  inventory: Readonly<
 -    Omit<InventoryDefinition, "ball" | "bird"> & Partial<InventoryDefinition>
 -  >,
-+  inventory: Readonly<Partial<InventoryDefinition>>,
++  inventory: Readonly<InventoryDefinition>,
    timeLimitSeconds?: number,
    ballTransforms: Readonly<Record<string, BallTransform>> = {},
  ): GameState {
@@ -431,44 +366,6 @@ index b221bd7..5d9fef3 100644
    const normalizedBallTransforms = Object.fromEntries(
      Object.entries(ballTransforms).map(([id, transform]) => [
        id,
-diff --git a/tests/dynamicBlock.test.ts b/tests/dynamicBlock.test.ts
-index c5c73b7..c81340b 100644
---- a/tests/dynamicBlock.test.ts
-+++ b/tests/dynamicBlock.test.ts
-@@ -43,7 +43,14 @@ function buildLevel(
-     title: "Dynamic Block Fixture",
-     difficulty: "Basic",
-     order: 1,
--    inventory: { ball: 0, bird: 0, block: 0, ramp: 0 },
-+    inventory: {
-+      ball: 0,
-+      bird: 0,
-+      block: 0,
-+      ramp: 0,
-+      mattress: 0,
-+      teapot: 0,
-+    },
-     contactRules: [],
-     actors: [],
-     balls: [{ ...PARKED_BALL }],
-@@ -189,7 +196,16 @@ describe("dynamic Block ownership & inventory", () => {
-           dynamic: true,
-         },
-       ],
--      { inventory: { ball: 0, bird: 0, block: 2, ramp: 0 } },
-+      {
-+        inventory: {
-+          ball: 0,
-+          bird: 0,
-+          block: 2,
-+          ramp: 0,
-+          mattress: 0,
-+          teapot: 0,
-+        },
-+      },
-     );
- 
-     expect(level.inventory.block).toBe(2);
 diff --git a/tests/gameState.test.ts b/tests/gameState.test.ts
 index fa9f6db..3d690c4 100644
 --- a/tests/gameState.test.ts
@@ -516,62 +413,29 @@ index d4289d3..878f637 100644
        expect(result.events.at(-1)).toMatchObject({ type: "goal" });
      },
    );
-diff --git a/tests/prototypePuzzle.test.ts b/tests/prototypePuzzle.test.ts
-index c3eba21..c5262f7 100644
---- a/tests/prototypePuzzle.test.ts
-+++ b/tests/prototypePuzzle.test.ts
-@@ -64,7 +64,14 @@ describe("the bundled relay-ramp puzzle", () => {
+diff --git a/tests/levelValidation.test.ts b/tests/levelValidation.test.ts
+index ce1397a..dff1b32 100644
+--- a/tests/levelValidation.test.ts
++++ b/tests/levelValidation.test.ts
+@@ -120,8 +120,17 @@ describe("validateLevel", () => {
+     expect(() =>
+       validateLevel({ ...rawLevel, inventory: { block: 1, ramp: 0.5 } }),
+     ).toThrow(/inventory.*non-negative integer/i);
++    expect(
++      validateLevel({ ...rawLevel, inventory: { block: 1 } }).inventory,
++    ).toEqual({ block: 1 });
++  });
++
++  it("rejects unknown sparse inventory keys", () => {
+     expect(() =>
+-      validateLevel({ ...rawLevel, inventory: { block: 1 } }),
++      validateLevel({
++        ...rawLevel,
++        inventory: { block: 1, unknown: 0 },
++      }),
+     ).toThrow(/inventory/i);
    });
  
-   it("defines the initial tray inventory", () => {
--    expect(level.inventory).toEqual({ ball: 0, bird: 0, block: 2, ramp: 4 });
-+    expect(level.inventory).toEqual({
-+      ball: 0,
-+      bird: 0,
-+      block: 2,
-+      ramp: 4,
-+      mattress: 0,
-+      teapot: 0,
-+    });
-   });
- 
-   it("declares the block-destruction contact demo", () => {
-diff --git a/tests/realPuzzles.test.ts b/tests/realPuzzles.test.ts
-index 030c9a0..8503c90 100644
---- a/tests/realPuzzles.test.ts
-+++ b/tests/realPuzzles.test.ts
-@@ -38,7 +38,14 @@ describe("the first real puzzle pair", () => {
-       difficulty: "Basic",
-       order: 4,
-       timeLimitSeconds: 10,
--      inventory: { ball: 0, bird: 0, block: 0, ramp: 2 },
-+      inventory: {
-+        ball: 0,
-+        bird: 0,
-+        block: 0,
-+        ramp: 2,
-+        mattress: 0,
-+        teapot: 0,
-+      },
-       ramps: [],
-     });
-     expect(downTheRamp.balls).toEqual([
-@@ -63,7 +70,14 @@ describe("the first real puzzle pair", () => {
-       difficulty: "Basic",
-       order: 5,
-       timeLimitSeconds: 12,
--      inventory: { ball: 0, bird: 0, block: 0, ramp: 2 },
-+      inventory: {
-+        ball: 0,
-+        bird: 0,
-+        block: 0,
-+        ramp: 2,
-+        mattress: 0,
-+        teapot: 0,
-+      },
-       ramps: [],
-     });
-     expect(bridgeTheGap.balls).toEqual([
 diff --git a/e2e/storybookAssets.e2e.ts b/e2e/storybookAssets.e2e.ts
 new file mode 100644
 index 0000000..f530bdf
@@ -39209,10 +39073,10 @@ index 0000000..34916df
 +];
 diff --git a/src/levels/partRegistry.ts b/src/levels/partRegistry.ts
 new file mode 100644
-index 0000000..571627e
+index 0000000..00ba61b
 --- /dev/null
 +++ b/src/levels/partRegistry.ts
-@@ -0,0 +1,80 @@
+@@ -0,0 +1,83 @@
 +/**
 + * The small, authoritative vocabulary for level-part identity.
 + *
@@ -39247,7 +39111,10 @@ index 0000000..571627e
 +    : never;
 +}[InventoryPartKey];
 +
-+export type InventoryDefinition = Record<InventoryPartKey, number>;
++/** Sparse level JSON inventory; omitted registered parts mean zero. */
++export type InventoryDefinition = Partial<Record<InventoryPartKey, number>>;
++/** Complete runtime inventory after missing level keys are normalized to zero. */
++export type CompleteInventoryDefinition = Record<InventoryPartKey, number>;
 +
 +export const INVENTORY_PART_KEYS = Object.keys(
 +  PART_REGISTRY,
@@ -39286,11 +39153,11 @@ index 0000000..571627e
 +}
 +
 +export function createEmptyInventory(
-+  overrides: Readonly<Partial<InventoryDefinition>> = {},
-+): InventoryDefinition {
-+  return INVENTORY_PART_KEYS.reduce<InventoryDefinition>(
++  overrides: Readonly<InventoryDefinition> = {},
++): CompleteInventoryDefinition {
++  return INVENTORY_PART_KEYS.reduce<CompleteInventoryDefinition>(
 +    (inventory, key) => ({ ...inventory, [key]: overrides[key] ?? 0 }),
-+    {} as InventoryDefinition,
++    {} as CompleteInventoryDefinition,
 +  );
 +}
 diff --git a/tests/storybookAssets.test.ts b/tests/storybookAssets.test.ts
