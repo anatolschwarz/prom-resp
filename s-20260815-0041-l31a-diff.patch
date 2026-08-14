@@ -1,5 +1,5 @@
 diff --git a/docs/CODEX_PROMPTS.md b/docs/CODEX_PROMPTS.md
-index c00dc1f..cdbc6ab 100644
+index c00dc1f..84d7e0e 100644
 --- a/docs/CODEX_PROMPTS.md
 +++ b/docs/CODEX_PROMPTS.md
 @@ -4561,6 +4561,119 @@ FINAL RESPONSE MUST INCLUDE
@@ -122,6 +122,56 @@ index c00dc1f..cdbc6ab 100644
  Continue #30 from the current working tree.
  
  A real Storybook asset-pipeline defect remains.
+@@ -5323,3 +5436,49 @@ FINAL RESPONSE MUST REPORT
+ Append THIS ENTIRE PROMPT VERBATIM to docs/CODEX_PROMPTS.md.
+ 
+ Then print the same complete final response in the Codex terminal and STOP.
++# Codex correction prompt — Phase 2 #31
++
++Continue Phase 2 milestone #31 only. Do not reopen #30 or redesign L2.
++
++The actual #31 diff was reviewed and has these required corrections:
++
++1. Fix `referenceSolutions` validation:
++
++   * reject a reference solution whose placement arrays are all empty;
++   * reject duplicate mattress IDs within a reference solution;
++   * update validation/error wording so it is not Ramp-specific now that mattresses are supported.
++
++2. Add a focused unit test that directly proves the generic deterministic ball–mattress bounce/restitution semantic, rather than only proving that L2 eventually solves.
++
++3. Extend the focused L2 Playwright coverage to verify mattress Rerun restoration.
++
++Do not expand scope beyond these corrections.
++
++Preserve unrelated/owner work, especially:
++
++* `docs/ROADMAP.md`
++* `docs/ROADMAP.md.bak`
++* `docs/reviews/`
++* unrelated response artifacts
++
++Do not commit or push the Contraption Lab repo.
++
++Run appropriate targeted tests, then the normal handoff checks:
++
++* typecheck
++* lint
++* full unit suite once
++* build
++* `git diff --check`
++* focused L2 Playwright
++
++Create/update:
++
++* `s-20260815-0041-l31a-response.md`
++* `s-20260815-0041-l31a-diff.patch`
++
++Use exactly:
++
++`~/code/prom-resp/push-response.sh s-20260815-0041-l31a`
++
++IMPORTANT: append THIS FULL ORIGINAL OPERATIONAL PROMPT VERBATIM to `docs/CODEX_PROMPTS.md`. Do not paraphrase, reconstruct, summarize, or omit any part of it.
 diff --git a/index.html b/index.html
 index e0cd5dc..5a34769 100644
 --- a/index.html
@@ -36243,7 +36293,7 @@ index d801e53..78502d4 100644
  
  if (new Set(levels.map((level) => level.id)).size !== levels.length) {
 diff --git a/src/levels/validateLevel.ts b/src/levels/validateLevel.ts
-index 36d9150..d42baa6 100644
+index 36d9150..cf1d792 100644
 --- a/src/levels/validateLevel.ts
 +++ b/src/levels/validateLevel.ts
 @@ -10,6 +10,8 @@ import type {
@@ -36263,7 +36313,7 @@ index 36d9150..d42baa6 100644
  } from "./levelTypes";
  import { PUZZLE_DIFFICULTIES } from "./levelTypes";
  import {
-@@ -72,6 +75,21 @@ const isTrayRamp = (value: unknown): value is TrayRampDefinition =>
+@@ -72,6 +75,26 @@ const isTrayRamp = (value: unknown): value is TrayRampDefinition =>
    (value.ownership === "fixed" || value.ownership === "player") &&
    isFiniteNumber(value.rotation);
  
@@ -36277,15 +36327,20 @@ index 36d9150..d42baa6 100644
 +  value.restitution > 0;
 +
 +const isTrayMattress = (value: unknown): value is TrayMattressDefinition =>
-+  isRecord(value) && isMattress({ ...value, id: "tray" }) && isPoint(value.spawn);
++  isRecord(value) &&
++  isMattress({ ...value, id: "tray" }) &&
++  isPoint(value.spawn);
 +
 +const isMattressSnapTarget = (value: unknown): value is MattressSnapTarget =>
-+  isRecord(value) && isPoint(value) && isFiniteNumber(value.tolerance) && value.tolerance > 0;
++  isRecord(value) &&
++  isPoint(value) &&
++  isFiniteNumber(value.tolerance) &&
++  value.tolerance > 0;
 +
  const isRampSnapTarget = (value: unknown): value is RampSnapTarget =>
    isRecord(value) &&
    isPoint(value) &&
-@@ -96,13 +114,15 @@ const isStorybookPresentation = (
+@@ -96,13 +119,20 @@ const isStorybookPresentation = (
    if (
      !isStorybookRenderDefinition(value.environment) ||
      !isStorybookRenderDefinition(value.ball) ||
@@ -36296,42 +36351,67 @@ index 36d9150..d42baa6 100644
    ) {
      return false;
    }
-+  if (value.ramp !== undefined && !isStorybookRenderDefinition(value.ramp)) return false;
-+  if (value.mattress !== undefined && !isStorybookRenderDefinition(value.mattress)) return false;
++  if (value.ramp !== undefined && !isStorybookRenderDefinition(value.ramp))
++    return false;
++  if (
++    value.mattress !== undefined &&
++    !isStorybookRenderDefinition(value.mattress)
++  )
++    return false;
 +  if (value.ramp === undefined && value.mattress === undefined) return false;
    return (
      value.goal.sparkle === undefined ||
      isStorybookRenderDefinition(value.goal.sparkle)
-@@ -118,15 +138,15 @@ function validateReferenceSolutions(value: unknown): ReferenceSolution[] {
+@@ -118,23 +148,41 @@ function validateReferenceSolutions(value: unknown): ReferenceSolution[] {
        !isRecord(solution) ||
        typeof solution.id !== "string" ||
        solution.id.trim() === "" ||
 -      !Array.isArray(solution.ramps) ||
 -      solution.ramps.length === 0 ||
 -      !solution.ramps.every(isRamp)
-+      (solution.ramps !== undefined && (!Array.isArray(solution.ramps) || !solution.ramps.every(isRamp))) ||
-+      (solution.mattresses !== undefined && (!Array.isArray(solution.mattresses) || !solution.mattresses.every(isMattress))) ||
-+      (solution.ramps === undefined && solution.mattresses === undefined)
++      (solution.ramps !== undefined &&
++        (!Array.isArray(solution.ramps) || !solution.ramps.every(isRamp))) ||
++      (solution.mattresses !== undefined &&
++        (!Array.isArray(solution.mattresses) ||
++          !solution.mattresses.every(isMattress))) ||
++      (solution.ramps === undefined && solution.mattresses === undefined) ||
++      (solution.ramps?.length ?? 0) + (solution.mattresses?.length ?? 0) === 0
      ) {
        throw new Error(
-         `Level reference solution ${index} must contain named Ramp placements.`,
+-        `Level reference solution ${index} must contain named Ramp placements.`,
++        `Level reference solution ${index} must contain at least one placement.`,
        );
      }
--    if (
-+    if (solution.ramps &&
+     if (
++      solution.ramps &&
        new Set(solution.ramps.map((ramp) => ramp.id)).size !==
-       solution.ramps.length
+-      solution.ramps.length
++        solution.ramps.length
      ) {
-@@ -134,7 +154,7 @@ function validateReferenceSolutions(value: unknown): ReferenceSolution[] {
-         `Level reference solution ${index} Ramp ids must be unique.`,
+       throw new Error(
+-        `Level reference solution ${index} Ramp ids must be unique.`,
++        `Level reference solution ${index} Ramp placement ids must be unique.`,
        );
      }
 -    return { id: solution.id, ramps: solution.ramps };
-+    return { id: solution.id, ...(solution.ramps ? { ramps: solution.ramps } : {}), ...(solution.mattresses ? { mattresses: solution.mattresses } : {}) };
++    if (
++      solution.mattresses &&
++      new Set(solution.mattresses.map((mattress) => mattress.id)).size !==
++        solution.mattresses.length
++    ) {
++      throw new Error(
++        `Level reference solution ${index} Mattress placement ids must be unique.`,
++      );
++    }
++    return {
++      id: solution.id,
++      ...(solution.ramps ? { ramps: solution.ramps } : {}),
++      ...(solution.mattresses ? { mattresses: solution.mattresses } : {}),
++    };
    });
    if (
      new Set(solutions.map((solution) => solution.id)).size !== solutions.length
-@@ -396,13 +416,16 @@ export function validateLevel(value: unknown): LevelDefinition {
+@@ -396,13 +444,16 @@ export function validateLevel(value: unknown): LevelDefinition {
      timeLimitSeconds,
      inventory,
      trayRamp,
@@ -36348,32 +36428,46 @@ index 36d9150..d42baa6 100644
      blocks,
      floor,
      goal,
-@@ -434,6 +457,7 @@ export function validateLevel(value: unknown): LevelDefinition {
+@@ -434,6 +485,8 @@ export function validateLevel(value: unknown): LevelDefinition {
    if (trayRamp !== undefined && !isTrayRamp(trayRamp)) {
      throw new Error("Level trayRamp must be a valid Ramp with a spawn point.");
    }
-+  if (trayMattress !== undefined && !isTrayMattress(trayMattress)) throw new Error("Level trayMattress must be valid.");
++  if (trayMattress !== undefined && !isTrayMattress(trayMattress))
++    throw new Error("Level trayMattress must be valid.");
    if (
      rampSnapTargets !== undefined &&
      (!Array.isArray(rampSnapTargets) ||
-@@ -443,6 +467,7 @@ export function validateLevel(value: unknown): LevelDefinition {
+@@ -443,6 +496,14 @@ export function validateLevel(value: unknown): LevelDefinition {
        "Level rampSnapTargets must contain valid placement targets.",
      );
    }
-+  if (mattressSnapTargets !== undefined && (!Array.isArray(mattressSnapTargets) || !mattressSnapTargets.every(isMattressSnapTarget))) throw new Error("Level mattressSnapTargets must contain valid placement targets.");
++  if (
++    mattressSnapTargets !== undefined &&
++    (!Array.isArray(mattressSnapTargets) ||
++      !mattressSnapTargets.every(isMattressSnapTarget))
++  )
++    throw new Error(
++      "Level mattressSnapTargets must contain valid placement targets.",
++    );
    if (
      storybookPresentation !== undefined &&
      !isStorybookPresentation(storybookPresentation)
-@@ -494,6 +519,8 @@ export function validateLevel(value: unknown): LevelDefinition {
+@@ -494,6 +555,14 @@ export function validateLevel(value: unknown): LevelDefinition {
    if (!Array.isArray(ramps) || !ramps.every(isRamp)) {
      throw new Error("Level ramps must be an array of valid ramps with ids.");
    }
 +  const validatedMattresses = mattresses === undefined ? [] : mattresses;
-+  if (!Array.isArray(validatedMattresses) || !validatedMattresses.every(isMattress)) throw new Error("Level mattresses must be an array of valid mattress definitions.");
++  if (
++    !Array.isArray(validatedMattresses) ||
++    !validatedMattresses.every(isMattress)
++  )
++    throw new Error(
++      "Level mattresses must be an array of valid mattress definitions.",
++    );
    if (new Set(ramps.map((ramp) => ramp.id)).size !== ramps.length) {
      throw new Error("Level ramp ids must be unique.");
    }
-@@ -508,9 +535,10 @@ export function validateLevel(value: unknown): LevelDefinition {
+@@ -508,9 +577,14 @@ export function validateLevel(value: unknown): LevelDefinition {
        ...balls.map((ball) => ball.id),
        ...validatedActors.map((actor) => actor.id),
        ...ramps.map((ramp) => ramp.id),
@@ -36381,11 +36475,15 @@ index 36d9150..d42baa6 100644
        ...blocks.map((block) => block.id),
      ]).size !==
 -    ramps.length + blocks.length + balls.length + validatedActors.length
-+    ramps.length + validatedMattresses.length + blocks.length + balls.length + validatedActors.length
++    ramps.length +
++      validatedMattresses.length +
++      blocks.length +
++      balls.length +
++      validatedActors.length
    ) {
      throw new Error("Level component ids must be unique.");
    }
-@@ -533,7 +561,9 @@ export function validateLevel(value: unknown): LevelDefinition {
+@@ -533,7 +607,9 @@ export function validateLevel(value: unknown): LevelDefinition {
      ...(timeLimitSeconds === undefined ? {} : { timeLimitSeconds }),
      inventory,
      ...(trayRamp === undefined ? {} : { trayRamp }),
@@ -36395,7 +36493,7 @@ index 36d9150..d42baa6 100644
      ...(storybookPresentation === undefined ? {} : { storybookPresentation }),
      ...(validatedReferenceSolutions === undefined
        ? {}
-@@ -542,6 +572,7 @@ export function validateLevel(value: unknown): LevelDefinition {
+@@ -542,6 +618,7 @@ export function validateLevel(value: unknown): LevelDefinition {
      actors: validatedActors,
      balls,
      ramps,
@@ -36614,10 +36712,10 @@ index 23e25c6..cb565cc 100644
      this.renderTimer(state, view.parentSettings.timerFailureMode);
 diff --git a/tests/boing.test.ts b/tests/boing.test.ts
 new file mode 100644
-index 0000000..ce14ed2
+index 0000000..688a762
 --- /dev/null
 +++ b/tests/boing.test.ts
-@@ -0,0 +1,61 @@
+@@ -0,0 +1,102 @@
 +import { describe, expect, it } from "vitest";
 +import rawBoing from "../src/levels/boing.json";
 +import { simulateReferenceSolution } from "../src/game/headlessSimulation";
@@ -36665,6 +36763,47 @@ index 0000000..ce14ed2
 +      ballId: "boing-marble",
 +    });
 +    expect(second).toEqual(first);
++  });
++
++  it("bounces a ball deterministically from the declared mattress restitution", () => {
++    const solution = level.referenceSolutions![0]!;
++    const baseline = simulateReferenceSolution(level, solution, {
++      maxTicks: 240,
++    });
++    const softer = simulateReferenceSolution(
++      level,
++      {
++        ...solution,
++        mattresses: solution.mattresses!.map((mattress) => ({
++          ...mattress,
++          restitution: 0.5,
++        })),
++      },
++      { maxTicks: 240 },
++    );
++    const baselineBall = baseline.bodies.find(
++      (body) => body.id === "boing-marble",
++    );
++    const softerBall = softer.bodies.find((body) => body.id === "boing-marble");
++    expect(baselineBall?.y).toBeLessThan(softerBall!.y);
++    expect(baseline).toEqual(
++      simulateReferenceSolution(level, solution, { maxTicks: 240 }),
++    );
++  });
++
++  it("rejects empty reference placements and duplicate mattress ids", () => {
++    const empty = structuredClone(rawBoing);
++    empty.referenceSolutions = [{ id: "empty", mattresses: [] }];
++    expect(() => validateLevel(empty)).toThrow(
++      "must contain at least one placement",
++    );
++
++    const duplicate = structuredClone(rawBoing);
++    const mattress = duplicate.referenceSolutions[0]!.mattresses[0]!;
++    duplicate.referenceSolutions[0]!.mattresses.push({ ...mattress });
++    expect(() => validateLevel(duplicate)).toThrow(
++      "Mattress placement ids must be unique",
++    );
 +  });
 +
 +  it("restores the mattress inventory on reset and rerun", () => {
@@ -36809,10 +36948,10 @@ index e265d43..d7610eb 100644
  
 diff --git a/e2e/boing.e2e.ts b/e2e/boing.e2e.ts
 new file mode 100644
-index 0000000..15b063a
+index 0000000..3dd25a1
 --- /dev/null
 +++ b/e2e/boing.e2e.ts
-@@ -0,0 +1,104 @@
+@@ -0,0 +1,118 @@
 +import { expect, test, type Locator, type Page } from "@playwright/test";
 +
 +async function gamePoint(canvas: Locator, point: { x: number; y: number }) {
@@ -36895,6 +37034,20 @@ index 0000000..15b063a
 +    )
 +    .toEqual({ x: 385, y: 430, texture: "storybook-mattress-idle" });
 +  await page.locator("#simulation-button").click();
++  await expect(page.locator("#rerun-button")).toBeEnabled();
++  await page.locator("#rerun-button").click();
++  await expect
++    .poll(() =>
++      page.evaluate(() => {
++        const scene =
++          window.__contraptionLabTest?.getPrototypeScene() as unknown as {
++            mattresses: Map<string, { shape: { x: number; y: number } }>;
++          };
++        const mattress = scene?.mattresses.get("tray-mattress-1");
++        return mattress && { x: mattress.shape.x, y: mattress.shape.y };
++      }),
++    )
++    .toEqual({ x: 385, y: 430 });
 +  await expect(page.locator("#mode-label")).toHaveText("Mode: Success", {
 +    timeout: 12_000,
 +  });
