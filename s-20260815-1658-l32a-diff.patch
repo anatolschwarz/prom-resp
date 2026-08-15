@@ -1,8 +1,8 @@
 diff --git a/docs/CODEX_PROMPTS.md b/docs/CODEX_PROMPTS.md
-index 84d7e0e..8869782 100644
+index 84d7e0e..c66db83 100644
 --- a/docs/CODEX_PROMPTS.md
 +++ b/docs/CODEX_PROMPTS.md
-@@ -5482,3 +5482,110 @@ Use exactly:
+@@ -5482,3 +5482,202 @@ Use exactly:
  `~/code/prom-resp/push-response.sh s-20260815-0041-l31a`
  
  IMPORTANT: append THIS FULL ORIGINAL OPERATIONAL PROMPT VERBATIM to `docs/CODEX_PROMPTS.md`. Do not paraphrase, reconstruct, summarize, or omit any part of it.
@@ -105,6 +105,98 @@ index 84d7e0e..8869782 100644
 +`~/code/prom-resp/push-response.sh s-20260815-1658-l32a`
 +
 +Ensure both handoff artifacts represent the FINAL working tree.
++
++IMPORTANT: append THIS FULL ORIGINAL OPERATIONAL PROMPT VERBATIM to:
++
++`docs/CODEX_PROMPTS.md`
++
++Do not paraphrase, reconstruct, summarize, or omit any part of it.
++
++Then STOP.
++
++# Codex correction prompt — Phase 2 #32 L3 “Tea Time”
++
++Continue Phase 2 milestone #32 from the CURRENT working tree.
++
++Session token:
++`s-20260815-1658-l32a`
++
++Manual visual testing found a real L3 layout defect.
++
++Observed in browser:
++
++* the teacup is beside/left of the table instead of UNDER the table;
++* the marble can move toward the cup without requiring the intended Teapot redirection path;
++* the current scene therefore does not enforce the approved L3 puzzle structure.
++
++Fix #32 without redesigning the Teapot mechanic.
++
++Required correction:
++
++1. Make the visible/runtime L3 layout match the approved card:
++
++   * doll table remains central;
++   * teacup is under the table;
++   * marble path is along/above the tabletop;
++   * cup is not directly reachable from the marble's normal path;
++   * intended route requires:
++     Plank -> Teapot lid -> Teapot redirect -> cup under table.
++
++2. Preserve the existing generic deterministic Teapot redirect architecture if it is correct.
++
++   * no level-id gameplay branch;
++   * browser/headless semantics remain equivalent;
++   * Storybook sprite dimensions must not define Matter geometry.
++
++3. Recalculate/update L3 level geometry and reference solutions as necessary.
++
++4. BOTH named reference solutions must still solve deterministically:
++
++   * normal Plank route;
++   * distinct no-Plank star route.
++     The no-Plank star route must still use the Teapot and must remain materially different from the normal route.
++
++5. Update focused tests only as required by the corrected geometry.
++
++6. Focused browser test must prove the actual intended path:
++
++   * L3 selected;
++   * cup is under the table;
++   * Plank + Teapot placement;
++   * Run;
++   * marble enters Teapot;
++   * redirect sends it toward the under-table cup;
++   * success;
++   * Rerun/Reset remain correct.
++
++Run:
++
++* targeted affected Vitest
++* `npm run typecheck`
++* `npm run lint`
++* `npm test`
++* focused `e2e/teaTime.e2e.ts`
++* `npm run build`
++* `git diff --check`
++
++Do not run full Playwright unless required by a broader regression.
++
++Do not reopen or modify #30/#31.
++
++Preserve unrelated/owner work.
++
++Do not commit or push Contraption Lab.
++
++Update:
++
++* `s-20260815-1658-l32a-response.md`
++* `s-20260815-1658-l32a-diff.patch`
++
++Handoff using exactly:
++
++`~/code/prom-resp/push-response.sh s-20260815-1658-l32a`
++
++Ensure response + diff represent the FINAL working tree.
 +
 +IMPORTANT: append THIS FULL ORIGINAL OPERATIONAL PROMPT VERBATIM to:
 +
@@ -1183,10 +1275,10 @@ index d7610eb..7c7e29d 100644
  
 diff --git a/e2e/teaTime.e2e.ts b/e2e/teaTime.e2e.ts
 new file mode 100644
-index 0000000..bd036c2
+index 0000000..a124ab9
 --- /dev/null
 +++ b/e2e/teaTime.e2e.ts
-@@ -0,0 +1,96 @@
+@@ -0,0 +1,106 @@
 +import { expect, test, type Locator, type Page } from "@playwright/test";
 +
 +async function gamePoint(canvas: Locator, point: { x: number; y: number }) {
@@ -1234,7 +1326,7 @@ index 0000000..bd036c2
 +    await page.locator("#parts-palette-toggle").click();
 +  await page.locator("#tray-teapot-button").click();
 +  await page.locator("#tray-ramp-button").click();
-+  await movePart(page, canvas, { x: 620, y: 130 }, { x: 550, y: 230 });
++  await movePart(page, canvas, { x: 520, y: 180 }, { x: 490, y: 307 });
 +  await expect
 +    .poll(() =>
 +      page.evaluate(() => {
@@ -1251,6 +1343,10 @@ index 0000000..bd036c2
 +              string,
 +              { shape: { x: number; y: number; rotation: number } }
 +            >;
++            level: {
++              goal: { x: number; y: number };
++              blocks: Array<{ id: string; y: number }>;
++            };
 +          };
 +        const teapot = scene?.teapots.get("tray-teapot-1");
 +        const ramp = scene?.ramps.get("tray-ramp-1");
@@ -1265,12 +1361,18 @@ index 0000000..bd036c2
 +            y: ramp.shape.y,
 +            rotation: ramp.shape.rotation,
 +          },
++          underTable:
++            scene.level.goal.y >
++            scene.level.blocks.find(
++              (block) => block.id === "tabletop-center-geometry",
++            )!.y,
 +        };
 +      }),
 +    )
 +    .toEqual({
-+      teapot: { x: 245, y: 275, texture: "storybook-teapot-idle" },
-+      ramp: { x: 550, y: 230, rotation: -0.18 },
++      teapot: { x: 650, y: 340, texture: "storybook-teapot-idle" },
++      ramp: { x: 490, y: 307, rotation: 0.17 },
++      underTable: true,
 +    });
 +  await page.locator("#simulation-button").click();
 +  await expect(page.locator("#rerun-button")).toBeEnabled();
@@ -37188,10 +37290,10 @@ HcmV?d00001
 
 diff --git a/src/levels/teaTime.json b/src/levels/teaTime.json
 new file mode 100644
-index 0000000..1cfd37a
+index 0000000..9d1b533
 --- /dev/null
 +++ b/src/levels/teaTime.json
-@@ -0,0 +1,140 @@
+@@ -0,0 +1,156 @@
 +{
 +  "id": "tea-time-008",
 +  "levelName": "Tea Time",
@@ -37206,10 +37308,10 @@ index 0000000..1cfd37a
 +    "height": 24,
 +    "rotation": 0,
 +    "ownership": "player",
-+    "spawn": { "x": 620, "y": 130 }
++    "spawn": { "x": 520, "y": 180 }
 +  },
 +  "rampSnapTargets": [
-+    { "x": 550, "y": 230, "rotation": -0.18, "tolerance": 145 }
++    { "x": 490, "y": 307, "rotation": 0.17, "tolerance": 145 }
 +  ],
 +  "trayTeapot": {
 +    "x": 0,
@@ -37217,7 +37319,7 @@ index 0000000..1cfd37a
 +    "width": 124,
 +    "height": 94,
 +    "ownership": "player",
-+    "spawn": { "x": 245, "y": 275 }
++    "spawn": { "x": 650, "y": 340 }
 +  },
 +  "storybookPresentation": {
 +    "environment": { "asset": "corner_l3", "width": 960, "height": 540 },
@@ -37238,21 +37340,21 @@ index 0000000..1cfd37a
 +      "ramps": [
 +        {
 +          "id": "l3-plank",
-+          "x": 550,
-+          "y": 230,
++          "x": 490,
++          "y": 307,
 +          "width": 230,
 +          "height": 24,
-+          "rotation": -0.18,
++          "rotation": 0.17,
 +          "ownership": "player"
 +        }
 +      ],
 +      "teapots": [
 +        {
 +          "id": "l3-teapot",
-+          "x": 245,
-+          "y": 275,
-+          "width": 124,
-+          "height": 94,
++          "x": 650,
++          "y": 340,
++          "width": 80,
++          "height": 100,
 +          "ownership": "player"
 +        }
 +      ]
@@ -37262,10 +37364,10 @@ index 0000000..1cfd37a
 +      "teapots": [
 +        {
 +          "id": "l3-teapot",
-+          "x": 245,
-+          "y": 275,
-+          "width": 124,
-+          "height": 94,
++          "x": 650,
++          "y": 340,
++          "width": 80,
++          "height": 100,
 +          "ownership": "player"
 +        }
 +      ]
@@ -37284,7 +37386,7 @@ index 0000000..1cfd37a
 +      "action": {
 +        "type": "redirect",
 +        "target": { "type": "contact", "index": 0 },
-+        "direction": { "x": -0.55, "y": 1 }
++        "direction": { "x": -0.08, "y": 1 }
 +      }
 +    }
 +  ],
@@ -37292,8 +37394,8 @@ index 0000000..1cfd37a
 +  "balls": [
 +    {
 +      "id": "tea-marble",
-+      "x": 800,
-+      "y": 150,
++      "x": 250,
++      "y": 235,
 +      "radius": 18,
 +      "ownership": "fixed"
 +    }
@@ -37303,41 +37405,57 @@ index 0000000..1cfd37a
 +  "teapots": [],
 +  "blocks": [
 +    {
-+      "id": "tabletop-geometry",
-+      "x": 520,
-+      "y": 240,
-+      "width": 600,
-+      "height": 34,
-+      "rotation": -0.18,
++      "id": "tabletop-left-geometry",
++      "x": 380,
++      "y": 280,
++      "width": 350,
++      "height": 30,
++      "rotation": 0.17,
++      "ownership": "fixed"
++    },
++    {
++      "id": "tabletop-center-geometry",
++      "x": 400,
++      "y": 365,
++      "width": 340,
++      "height": 32,
++      "ownership": "fixed"
++    },
++    {
++      "id": "tabletop-right-geometry",
++      "x": 760,
++      "y": 365,
++      "width": 100,
++      "height": 32,
 +      "ownership": "fixed"
 +    },
 +    {
 +      "id": "table-leg-left-geometry",
-+      "x": 350,
-+      "y": 390,
++      "x": 320,
++      "y": 430,
 +      "width": 38,
-+      "height": 250,
++      "height": 150,
 +      "ownership": "fixed"
 +    },
 +    {
 +      "id": "table-leg-right-geometry",
-+      "x": 760,
-+      "y": 390,
++      "x": 680,
++      "y": 430,
 +      "width": 38,
 +      "height": 250,
 +      "ownership": "fixed"
 +    }
 +  ],
 +  "floor": { "x": 480, "y": 530, "width": 960, "height": 20 },
-+  "goal": { "x": 165, "y": 410, "width": 92, "height": 92 },
++  "goal": { "x": 590, "y": 445, "width": 92, "height": 92 },
 +  "gravity": { "x": 0, "y": 1 }
 +}
 diff --git a/tests/teaTime.test.ts b/tests/teaTime.test.ts
 new file mode 100644
-index 0000000..1848df9
+index 0000000..0639351
 --- /dev/null
 +++ b/tests/teaTime.test.ts
-@@ -0,0 +1,89 @@
+@@ -0,0 +1,104 @@
 +import { describe, expect, it } from "vitest";
 +import rawTeaTime from "../src/levels/teaTime.json";
 +import { simulateReferenceSolution } from "../src/game/headlessSimulation";
@@ -37392,6 +37510,21 @@ index 0000000..1848df9
 +    const star = level.referenceSolutions![1]!;
 +    expect(normal.ramps).toHaveLength(1);
 +    expect(star.ramps).toBeUndefined();
++    expect(
++      simulateReferenceSolution(level, normal, { maxTicks: 1_200 }).events.some(
++        (event) =>
++          event.type === "contact" &&
++          event.participants.includes("ramp:l3-plank"),
++      ),
++    ).toBe(true);
++  });
++
++  it("places the cup below the tabletop geometry", () => {
++    const tabletop = level.blocks.find(
++      (block) => block.id === "tabletop-center-geometry",
++    );
++    expect(tabletop).toBeDefined();
++    expect(level.goal.y).toBeGreaterThan(tabletop!.y);
 +  });
 +
 +  it("validates Teapot reference placements", () => {
