@@ -38178,4 +38178,75 @@ w5ANVXhR-edMCs+g8kYGaeI<n$#81ZmAFZOXw7wu!Hvj+t07*qoM6N<$g4}k6Bme*a
 literal 0
 HcmV?d00001
 
-
+diff --git a/docs/CODEX_PROMPTS.md b/docs/CODEX_PROMPTS.md
+--- a/docs/CODEX_PROMPTS.md
++++ b/docs/CODEX_PROMPTS.md
+@@ -5970 +5970,68 @@
+ Then STOP.
++
++Continue Phase 2 #32 from the CURRENT working tree.
++
++Session token:
++s-20260815-1658-l32a
++
++DO NOT FIX ANYTHING.
++
++Manual inspection of the actual Tea Time browser scene shows:
++
++- the marble is visibly far LEFT of the table;
++- it is not visually above the tabletop;
++- nevertheless previous diagnostics report its first collision as:
++  `block:tabletop-left-geometry ↔ ball:tea-marble`
++
++This strongly suggests the Matter tabletop collision body extends into empty visible space to the left of the rendered table.
++
++Diagnose ONLY this visible-art / physics-geometry mismatch.
++
++In the actual Tea Time browser scene, report:
++
++1. Visible table bounds in canvas coordinates:
++   - left
++   - right
++   - top
++   - bottom
++
++2. `tabletop-left-geometry` Matter body:
++   - center x/y
++   - width/height
++   - rotation
++   - calculated world-space bounds/corners
++
++3. Marble:
++   - center x/y
++   - radius
++
++4. Determine whether the marble is geometrically above/intersecting the Matter tabletop while visually being left of the rendered tabletop.
++
++5. Explain why the Matter body occupies that visible empty region, if confirmed.
++
++Do not modify:
++- level geometry
++- sprite placement
++- physics
++- tests
++- reference solutions
++
++Do not fix anything.
++
++Do not commit or push Contraption Lab.
++
++Update:
++- s-20260815-1658-l32a-response.md
++- s-20260815-1658-l32a-diff.patch
++
++Handoff using exactly:
++
++~/code/prom-resp/push-response.sh s-20260815-1658-l32a
++
++IMPORTANT: append THIS FULL ORIGINAL OPERATIONAL PROMPT VERBATIM to:
++
++docs/CODEX_PROMPTS.md
++
++Do not paraphrase, reconstruct, summarize, or omit any part of it.
++
++Then STOP.
