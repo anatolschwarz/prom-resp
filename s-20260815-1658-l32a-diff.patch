@@ -29,13 +29,87 @@ index 88120f4..ecec7d9 100644
  ## Install and develop
  
 diff --git a/docs/CODEX_PROMPTS.md b/docs/CODEX_PROMPTS.md
-index 84d7e0e..586dba4 100644
+index 84d7e0e..aa9d065 100644
 --- a/docs/CODEX_PROMPTS.md
 +++ b/docs/CODEX_PROMPTS.md
-@@ -4592,6 +4592,158 @@ Ensure response + diff reflect the FINAL working tree.
+@@ -4592,6 +4592,232 @@ Ensure response + diff reflect the FINAL working tree.
  
  Then STOP.
  
++# Codex correction prompt — #32 initial marble fall
++
++Continue Phase 2 #32 from the CURRENT working tree.
++
++Session token:
++`s-20260815-1658-l32a`
++
++The previous diagnostic successfully reproduced the defect:
++
++* marble starts at `(250, 235)` with zero velocity;
++* it initially intersects `tabletop-left-geometry`;
++* Matter resolves that penetration and gives it unintended rightward motion;
++* therefore the marble moves right instead of initially falling under gravity.
++
++FIX THIS DEFECT ONLY.
++
++Required behavior:
++
++* At Run start, the marble must NOT overlap/intersect any tabletop or other physics body.
++* Initial marble velocity remains zero.
++* The marble must initially fall under gravity.
++* It must not acquire rightward motion before a legitimate physical contact causes it.
++
++Make the smallest geometry/initial-position correction necessary.
++
++Do NOT:
++
++* modify the Teapot redirect/contact behavior;
++* modify cup behavior;
++* redesign L3;
++* add an L3-specific gameplay branch;
++* mask the issue with an artificial velocity/force.
++
++Verify in the actual Phaser/Matter browser runtime with the same kind of trace used for diagnosis.
++
++Report:
++
++* initial position/velocity;
++* first several relevant position/velocity samples;
++* first physical contact;
++* evidence that the marble initially falls rather than moves right.
++
++Update affected reference-solution geometry/tests only if strictly required by this correction.
++
++Run only the targeted checks necessary for this fix plus:
++
++* focused `e2e/teaTime.e2e.ts` as relevant
++* `npm run typecheck`
++* `npm run lint`
++* `git diff --check`
++
++Do not run the full unit suite for this isolated correction unless a broader regression requires it.
++
++Do not commit or push Contraption Lab.
++
++Preserve unrelated/owner work.
++
++Update:
++
++* `s-20260815-1658-l32a-response.md`
++* `s-20260815-1658-l32a-diff.patch`
++
++Handoff using exactly:
++
++`~/code/prom-resp/push-response.sh s-20260815-1658-l32a`
++
++IMPORTANT: append THIS FULL ORIGINAL OPERATIONAL PROMPT VERBATIM to:
++
++`docs/CODEX_PROMPTS.md`
++
++Do not paraphrase, reconstruct, summarize, or omit any part of it.
++
++Then STOP.
++
 +# Codex diagnostic prompt — #32 marble moves right
 +
 +Continue Phase 2 #32 from the CURRENT working tree.
@@ -191,7 +265,7 @@ index 84d7e0e..586dba4 100644
  Start Phase 2 milestone #31 — Chapter 1 L2 “Boing”.
  
  Continue from the current Contraption Lab working tree.
-@@ -5482,3 +5634,202 @@ Use exactly:
+@@ -5482,3 +5708,202 @@ Use exactly:
  `~/code/prom-resp/push-response.sh s-20260815-0041-l31a`
  
  IMPORTANT: append THIS FULL ORIGINAL OPERATIONAL PROMPT VERBATIM to `docs/CODEX_PROMPTS.md`. Do not paraphrase, reconstruct, summarize, or omit any part of it.
@@ -1851,7 +1925,7 @@ index 0000000..75517d4
 
 diff --git a/src/levels/teaTime.json b/src/levels/teaTime.json
 new file mode 100644
-index 0000000..65a31d5
+index 0000000..e08924b
 --- /dev/null
 +++ b/src/levels/teaTime.json
 @@ -0,0 +1,156 @@
@@ -1949,7 +2023,7 @@ index 0000000..65a31d5
 +    {
 +      "id": "tea-marble",
 +      "x": 250,
-+      "y": 235,
++      "y": 220,
 +      "radius": 18,
 +      "ownership": "fixed"
 +    }
