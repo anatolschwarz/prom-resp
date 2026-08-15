@@ -29,13 +29,80 @@ index 88120f4..ecec7d9 100644
  ## Install and develop
  
 diff --git a/docs/CODEX_PROMPTS.md b/docs/CODEX_PROMPTS.md
-index 84d7e0e..d8f90dc 100644
+index 84d7e0e..586dba4 100644
 --- a/docs/CODEX_PROMPTS.md
 +++ b/docs/CODEX_PROMPTS.md
-@@ -4592,6 +4592,91 @@ Ensure response + diff reflect the FINAL working tree.
+@@ -4592,6 +4592,158 @@ Ensure response + diff reflect the FINAL working tree.
  
  Then STOP.
  
++# Codex diagnostic prompt — #32 marble moves right
++
++Continue Phase 2 #32 from the CURRENT working tree.
++
++Session token:
++`s-20260815-1658-l32a`
++
++DO NOT FIX ANYTHING.
++
++We are isolating one observed browser behavior only:
++
++In Tea Time, when Run starts, the marble should initially fall under gravity.
++
++Instead, manual testing shows the marble moving to the RIGHT toward the cup.
++
++Your task is ONLY to reproduce, identify, and verify whether this behavior actually occurs in the Phaser/Matter browser runtime.
++
++Do not modify:
++
++* gameplay code
++* level geometry
++* physics behavior
++* tests
++* reference solutions
++
++Do not attempt a correction.
++
++Use browser/runtime diagnostics to observe the marble immediately after Run.
++
++Report concrete evidence, including:
++
++* marble starting position
++* marble starting velocity
++* position/velocity over the first relevant ticks/frames
++* whether X increases before any Teapot/contact redirect
++* whether the marble is falling primarily under gravity or receiving horizontal motion
++* the source of any initial/rightward velocity if you can identify it by inspection
++
++The goal is simply to answer:
++
++**Can you reproduce and verify that the Tea Time marble moves right when it should initially fall?**
++
++If yes, state clearly that the defect is reproduced and show the evidence.
++
++If no, state clearly that you could not reproduce it and report exactly what you observed.
++
++Do not fix anything after identifying the cause.
++
++Do not commit or push Contraption Lab.
++
++Update:
++
++* `s-20260815-1658-l32a-response.md`
++* `s-20260815-1658-l32a-diff.patch`
++
++Handoff using exactly:
++
++`~/code/prom-resp/push-response.sh s-20260815-1658-l32a`
++
++IMPORTANT: append THIS FULL ORIGINAL OPERATIONAL PROMPT VERBATIM to:
++
++`docs/CODEX_PROMPTS.md`
++
++Do not paraphrase, reconstruct, summarize, or omit any part of it.
++
++Then STOP.
++
 +# Codex correction prompt — #32 browser physics failure
 +
 +Continue Phase 2 milestone #32 from the CURRENT working tree.
@@ -124,7 +191,7 @@ index 84d7e0e..d8f90dc 100644
  Start Phase 2 milestone #31 — Chapter 1 L2 “Boing”.
  
  Continue from the current Contraption Lab working tree.
-@@ -5482,3 +5567,202 @@ Use exactly:
+@@ -5482,3 +5634,202 @@ Use exactly:
  `~/code/prom-resp/push-response.sh s-20260815-0041-l31a`
  
  IMPORTANT: append THIS FULL ORIGINAL OPERATIONAL PROMPT VERBATIM to `docs/CODEX_PROMPTS.md`. Do not paraphrase, reconstruct, summarize, or omit any part of it.
