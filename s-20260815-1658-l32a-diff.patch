@@ -1,8 +1,130 @@
+diff --git a/README.md b/README.md
+index 88120f4..ecec7d9 100644
+--- a/README.md
++++ b/README.md
+@@ -15,6 +15,25 @@ locally in the browser.
+ - Node.js 24 (see `.nvmrc`)
+ - npm 11 or newer
+ - A modern browser with WebGL or Canvas support
++- FFmpeg (`ffmpeg` and `ffprobe`) for Storybook asset processing
++
++## Project configuration and repository conventions
++
++Project-specific Codex configuration lives under `.codex/`.
++
++- `.codex/config.toml` defines project-level Codex approval and sandbox settings.
++- Codex uses `approval_policy = "on-request"` and `sandbox_mode = "workspace-write"`.
++- `~/code/prom-resp` is configured as an allowed writable root for the external
++  prompt/response handoff integration.
++- `.codex/rules/` contains project-specific command allowances for routine,
++  trusted development and validation commands that should not require approval.
++  **`.codex/rules/` is the source of truth for project-specific Codex command allowances.**
++- Localhost access may be permitted where required for local development and
++  Playwright browser testing.
++- PNG files are treated as binary through `.gitattributes`.
++- Environment files (`.env`, `.env.*`) are excluded from Git.
++
++Codex-specific operating instructions are in [`AGENTS.md`](AGENTS.md).
+ 
+ ## Install and develop
+ 
 diff --git a/docs/CODEX_PROMPTS.md b/docs/CODEX_PROMPTS.md
-index 84d7e0e..c66db83 100644
+index 84d7e0e..d8f90dc 100644
 --- a/docs/CODEX_PROMPTS.md
 +++ b/docs/CODEX_PROMPTS.md
-@@ -5482,3 +5482,202 @@ Use exactly:
+@@ -4592,6 +4592,91 @@ Ensure response + diff reflect the FINAL working tree.
+ 
+ Then STOP.
+ 
++# Codex correction prompt — #32 browser physics failure
++
++Continue Phase 2 milestone #32 from the CURRENT working tree.
++
++Session token:
++`s-20260815-1658-l32a`
++
++Manual browser testing still FAILS.
++
++Observed behavior:
++
++1. The marble should fall/roll according to gravity and level geometry, but instead it moves horizontally toward the cup by itself.
++
++2. When the Teapot is placed directly in the marble's path, the marble passes through it instead of triggering the Teapot redirect.
++
++This means the actual Phaser/Matter runtime behavior does not match the intended L3 mechanics and may not match the headless behavior.
++
++Diagnose and fix the ACTUAL browser physics/contact path.
++
++Check specifically:
++
++* marble initial velocity / forces / body setup;
++* whether any unintended horizontal velocity or redirect is applied before Teapot contact;
++* Teapot Matter body creation;
++* Teapot sensor/collision geometry;
++* collision categories/masks if relevant;
++* Teapot contact tags/metadata;
++* collision-start/contact dispatch;
++* declarative redirect-rule matching;
++* browser execution of the same redirect semantics used by headless simulation.
++
++Do NOT hide the problem by changing the E2E path, moving the cup, or adding an L3-specific gameplay branch.
++
++Required behavior:
++
++1. Without a Teapot intercepting its path, the marble must NOT magically travel to/solve the cup.
++
++2. With a Teapot correctly placed in the marble path:
++
++   * a real Matter contact must occur;
++   * the generic Teapot redirect rule must execute;
++   * the marble must exit in the authored spout direction;
++   * the redirected marble must reach the under-table cup.
++
++3. Browser and headless behavior must remain deterministic and semantically equivalent.
++
++Add/adjust focused tests so they prove those behaviors through the real runtime path.
++
++Run:
++
++* targeted affected Vitest
++* focused `e2e/teaTime.e2e.ts`
++* `npm run typecheck`
++* `npm run lint`
++* `npm test`
++* `npm run build`
++* `git diff --check`
++
++Do not run full Playwright unless a broader integration issue requires it.
++
++Do not reopen #30/#31.
++
++Preserve unrelated/owner work.
++
++Do not commit or push Contraption Lab.
++
++Update:
++
++* `s-20260815-1658-l32a-response.md`
++* `s-20260815-1658-l32a-diff.patch`
++
++Handoff using exactly:
++
++`~/code/prom-resp/push-response.sh s-20260815-1658-l32a`
++
++Ensure response + diff represent the FINAL working tree.
++
++IMPORTANT: append THIS FULL ORIGINAL OPERATIONAL PROMPT VERBATIM to:
++
++`docs/CODEX_PROMPTS.md`
++
++Do not paraphrase, reconstruct, summarize, or omit any part of it.
++
++Then STOP.
++
+ Start Phase 2 milestone #31 — Chapter 1 L2 “Boing”.
+ 
+ Continue from the current Contraption Lab working tree.
+@@ -5482,3 +5567,202 @@ Use exactly:
  `~/code/prom-resp/push-response.sh s-20260815-0041-l31a`
  
  IMPORTANT: append THIS FULL ORIGINAL OPERATIONAL PROMPT VERBATIM to `docs/CODEX_PROMPTS.md`. Do not paraphrase, reconstruct, summarize, or omit any part of it.
@@ -226,10 +348,18 @@ index 5a34769..64b514f 100644
            </div>
          </aside>
 diff --git a/src/game/PrototypeScene.ts b/src/game/PrototypeScene.ts
-index 141b4d6..aaf293d 100644
+index 141b4d6..713e7d5 100644
 --- a/src/game/PrototypeScene.ts
 +++ b/src/game/PrototypeScene.ts
-@@ -35,12 +35,14 @@ import {
+@@ -8,6 +8,7 @@ import {
+ } from "./autonomousActors";
+ import {
+   addContactVectors,
++  canCaptureGoal,
+   executeContactRules,
+   redirectVelocity,
+   type ContactParticipant,
+@@ -35,12 +36,14 @@ import {
    type LevelDefinition,
    type MattressDefinition,
    type RampDefinition,
@@ -244,7 +374,7 @@ index 141b4d6..aaf293d 100644
  } from "../state/gameState";
  import type {
    BallTransform,
-@@ -151,6 +153,14 @@ interface EditableMattress {
+@@ -151,6 +154,14 @@ interface EditableMattress {
    selectionText: Phaser.GameObjects.Text;
    sprite?: Phaser.GameObjects.Image;
  }
@@ -259,7 +389,7 @@ index 141b4d6..aaf293d 100644
  
  interface EditableComponent {
    editable: boolean;
-@@ -206,9 +216,17 @@ interface MattressPartSnapshot {
+@@ -206,9 +217,17 @@ interface MattressPartSnapshot {
    definition: MattressDefinition;
    fromTray: boolean;
  }
@@ -278,7 +408,7 @@ index 141b4d6..aaf293d 100644
  
  interface BallPartSnapshot {
    definition: BallDefinition;
-@@ -231,7 +249,7 @@ export class PrototypeScene extends Phaser.Scene {
+@@ -231,7 +250,7 @@ export class PrototypeScene extends Phaser.Scene {
    private readonly balls = new Map<string, EditableBall>();
    private drag?: {
      componentId: string;
@@ -287,7 +417,7 @@ index 141b4d6..aaf293d 100644
      offset: Phaser.Math.Vector2;
      pointerStart: Phaser.Math.Vector2;
    };
-@@ -240,6 +258,7 @@ export class PrototypeScene extends Phaser.Scene {
+@@ -240,6 +259,7 @@ export class PrototypeScene extends Phaser.Scene {
    private lastComponentClick?: CompletedClick;
    private readonly blocks = new Map<string, EditableBlock>();
    private readonly mattresses = new Map<string, EditableMattress>();
@@ -295,7 +425,7 @@ index 141b4d6..aaf293d 100644
    private readonly actors = new Map<string, AutonomousActor>();
    private readonly contactObjects = new Map<MatterJS.BodyType, ContactObject>();
    private readonly editableComponents = new Map<
-@@ -276,7 +295,8 @@ export class PrototypeScene extends Phaser.Scene {
+@@ -276,7 +296,8 @@ export class PrototypeScene extends Phaser.Scene {
      ) => void,
      private readonly onComponentRemove: (
        componentId: string,
@@ -305,7 +435,7 @@ index 141b4d6..aaf293d 100644
      ) => void,
      private readonly onEditFeedback: (message: string) => void,
      private readonly showStorybookAssetProof = false,
-@@ -292,6 +312,7 @@ export class PrototypeScene extends Phaser.Scene {
+@@ -292,6 +313,7 @@ export class PrototypeScene extends Phaser.Scene {
            presentation.ball.asset,
            ...(presentation.ramp ? [presentation.ramp.asset] : []),
            ...(presentation.mattress ? [presentation.mattress.asset] : []),
@@ -313,7 +443,28 @@ index 141b4d6..aaf293d 100644
            presentation.goal.asset,
            presentation.goal.solvedAsset,
            ...(presentation.goal.sparkle
-@@ -356,6 +377,8 @@ export class PrototypeScene extends Phaser.Scene {
+@@ -313,11 +335,15 @@ export class PrototypeScene extends Phaser.Scene {
+     this.matter.world.autoUpdate = false;
+     this.matter.world.on(
+       "collisionstart",
+-      (
+-        _event: Phaser.Physics.Matter.Events.CollisionStartEvent,
+-        bodyA: MatterJS.BodyType,
+-        bodyB: MatterJS.BodyType,
+-      ) => this.handleContact(bodyA, bodyB),
++      (event: Phaser.Physics.Matter.Events.CollisionStartEvent) => {
++        // Phaser's convenient bodyA/bodyB event arguments describe only the
++        // final pair in this tick. Rules must see every pair, just as the
++        // headless Matter runner does; a ball can enter a Teapot sensor in the
++        // same tick that it contacts the tabletop geometry.
++        for (const pair of event.pairs) {
++          this.handleContact(pair.bodyA, pair.bodyB);
++        }
++      },
+     );
+     this.input.on(Phaser.Input.Events.POINTER_DOWN, () => {
+       if (!this.editInteractionEnabled) return;
+@@ -356,6 +382,8 @@ export class PrototypeScene extends Phaser.Scene {
            this.updateBlockPosition(this.drag.componentId, x, y, true);
          } else if (this.drag.componentType === "mattress") {
            this.updateMattressPosition(this.drag.componentId, x, y, true);
@@ -322,7 +473,7 @@ index 141b4d6..aaf293d 100644
          } else if (this.drag.componentType === "bird") {
            this.updateActorPosition(this.drag.componentId, x, y, true);
          } else {
-@@ -652,6 +675,17 @@ export class PrototypeScene extends Phaser.Scene {
+@@ -652,6 +680,17 @@ export class PrototypeScene extends Phaser.Scene {
      return id;
    }
  
@@ -340,7 +491,7 @@ index 141b4d6..aaf293d 100644
    captureRunLayout(): void {
      this.runSnapshot = {
        parts: [
-@@ -690,6 +724,15 @@ export class PrototypeScene extends Phaser.Scene {
+@@ -690,6 +729,15 @@ export class PrototypeScene extends Phaser.Scene {
              fromTray: mattress.fromTray,
            }),
          ),
@@ -356,7 +507,7 @@ index 141b4d6..aaf293d 100644
        ],
        actors: [...this.actors.values()].map((actor): ActorSnapshot => ({
          definition: {
-@@ -1290,8 +1333,101 @@ export class PrototypeScene extends Phaser.Scene {
+@@ -1290,8 +1338,101 @@ export class PrototypeScene extends Phaser.Scene {
      );
    }
  
@@ -459,7 +610,7 @@ index 141b4d6..aaf293d 100644
      componentId: string,
      shape: Phaser.GameObjects.Shape,
      pointer: Phaser.Input.Pointer,
-@@ -1348,7 +1484,7 @@ export class PrototypeScene extends Phaser.Scene {
+@@ -1348,7 +1489,7 @@ export class PrototypeScene extends Phaser.Scene {
    }
  
    private removeComponent(
@@ -468,7 +619,7 @@ index 141b4d6..aaf293d 100644
      componentId: string,
    ): void {
      if (componentType === "ball") {
-@@ -1393,6 +1529,14 @@ export class PrototypeScene extends Phaser.Scene {
+@@ -1393,6 +1534,14 @@ export class PrototypeScene extends Phaser.Scene {
        this.onEditFeedback("");
        return;
      }
@@ -483,7 +634,7 @@ index 141b4d6..aaf293d 100644
      const block = this.blocks.get(componentId);
      if (!block || !block.editable) return;
      this.unregisterContactObject(block.shape);
-@@ -1418,6 +1562,7 @@ export class PrototypeScene extends Phaser.Scene {
+@@ -1418,6 +1567,7 @@ export class PrototypeScene extends Phaser.Scene {
        this.createBlock(block);
      }
      for (const mattress of this.level.mattresses) this.createMattress(mattress);
@@ -491,7 +642,7 @@ index 141b4d6..aaf293d 100644
    }
  
    private restoreBalls(snapshot: readonly BallPartSnapshot[]): void {
-@@ -1559,8 +1704,10 @@ export class PrototypeScene extends Phaser.Scene {
+@@ -1559,8 +1709,10 @@ export class PrototypeScene extends Phaser.Scene {
          this.createRamp(part.definition, part.fromTray);
        } else if (part.componentType === "block") {
          this.createBlock(part.definition, part.fromTray);
@@ -503,7 +654,7 @@ index 141b4d6..aaf293d 100644
        }
      }
    }
-@@ -1588,9 +1735,16 @@ export class PrototypeScene extends Phaser.Scene {
+@@ -1588,9 +1740,16 @@ export class PrototypeScene extends Phaser.Scene {
        mattress.selectionText.destroy();
        mattress.sprite?.destroy();
      }
@@ -520,7 +671,57 @@ index 141b4d6..aaf293d 100644
      this.editableComponents.clear();
    }
  
-@@ -1762,6 +1916,12 @@ export class PrototypeScene extends Phaser.Scene {
+@@ -1635,8 +1794,13 @@ export class PrototypeScene extends Phaser.Scene {
+       this.toContactParticipant(second, bodyB),
+     );
+     if (
+-      (first.tag === "ball" && second.tag === "goal") ||
+-      (first.tag === "goal" && second.tag === "ball")
++      ball &&
++      (first.tag === "goal" || second.tag === "goal") &&
++      canCaptureGoal(
++        ball.body.velocity,
++        this.level.goal.maxEntryHorizontalSpeed,
++        this.level.goal.minEntryVerticalSpeed,
++      )
+     ) {
+       this.showSuccess();
+       this.onSuccess();
+@@ -1676,20 +1840,26 @@ export class PrototypeScene extends Phaser.Scene {
+     destroyVisual: () => void,
+   ): void {
+     if (gameObject.body) {
+-      this.contactObjects.set(gameObject.body as MatterJS.BodyType, {
+-        id,
+-        tag,
+-        destroyVisual,
+-      });
++      const contactObject = { id, tag, destroyVisual };
++      for (const body of this.getContactBodies(gameObject)) {
++        this.contactObjects.set(body, contactObject);
++      }
+     }
+   }
+ 
+   private unregisterContactObject(gameObject: MatterGameObject): void {
+-    if (gameObject.body) {
+-      this.contactObjects.delete(gameObject.body as MatterJS.BodyType);
++    for (const body of this.getContactBodies(gameObject)) {
++      this.contactObjects.delete(body);
+     }
+   }
+ 
++  /** Matter events can report a compound body's child rather than its root. */
++  private getContactBodies(gameObject: MatterGameObject): MatterJS.BodyType[] {
++    const body = gameObject.body as MatterJS.BodyType | undefined;
++    if (!body) return [];
++    return body.parts.length > 1 ? [...body.parts] : [body];
++  }
++
+   private destroyBall(componentId: string): void {
+     const ball = this.balls.get(componentId);
+     if (!ball) return;
+@@ -1762,6 +1932,12 @@ export class PrototypeScene extends Phaser.Scene {
      return `${TRAY_BLOCK_ID_PREFIX}${index}`;
    }
  
@@ -533,7 +734,7 @@ index 141b4d6..aaf293d 100644
    private updateRampTransform(
      rampId: string,
      x: number,
-@@ -2064,6 +2224,23 @@ export class PrototypeScene extends Phaser.Scene {
+@@ -2064,6 +2240,23 @@ export class PrototypeScene extends Phaser.Scene {
      mattress.selectionText.setPosition(position.x, position.y - 34);
    }
  
@@ -557,7 +758,7 @@ index 141b4d6..aaf293d 100644
    private destroyMattress(id: string): void {
      const mattress = this.mattresses.get(id);
      if (!mattress) return;
-@@ -2077,6 +2254,17 @@ export class PrototypeScene extends Phaser.Scene {
+@@ -2077,6 +2270,17 @@ export class PrototypeScene extends Phaser.Scene {
      this.editableComponents.delete(id);
    }
  
@@ -575,7 +776,7 @@ index 141b4d6..aaf293d 100644
    private rotateSelectedRamp(direction: -1 | 1): void {
      if (!this.editInteractionEnabled || !this.selectedComponentId) return;
      const ramp = this.ramps.get(this.selectedComponentId);
-@@ -2104,6 +2292,8 @@ export class PrototypeScene extends Phaser.Scene {
+@@ -2104,6 +2308,8 @@ export class PrototypeScene extends Phaser.Scene {
      }
      for (const [mattressId, mattress] of this.mattresses)
        this.updateComponentSelection(mattressId, mattress, 0x593c58);
@@ -584,7 +785,7 @@ index 141b4d6..aaf293d 100644
      for (const ball of this.balls.values()) {
        this.updateComponentSelection(
          ball.definition.id,
-@@ -2123,7 +2313,11 @@ export class PrototypeScene extends Phaser.Scene {
+@@ -2123,7 +2329,11 @@ export class PrototypeScene extends Phaser.Scene {
    private updateComponentSelection(
      componentId: string,
      component:
@@ -597,7 +798,7 @@ index 141b4d6..aaf293d 100644
      strokeColor: number,
    ): void {
      const selected =
-@@ -2276,7 +2470,7 @@ export class PrototypeScene extends Phaser.Scene {
+@@ -2276,7 +2486,7 @@ export class PrototypeScene extends Phaser.Scene {
  
    /** Visual-only reactions: no state or Matter body changes occur here. */
    private playStorybookPoke(
@@ -606,7 +807,7 @@ index 141b4d6..aaf293d 100644
      componentId?: string,
    ): void {
      if (!this.level.storybookPresentation) return;
-@@ -2285,9 +2479,11 @@ export class PrototypeScene extends Phaser.Scene {
+@@ -2285,9 +2495,11 @@ export class PrototypeScene extends Phaser.Scene {
          ? this.balls.get(componentId)?.sprite
          : target === "mattress" && componentId
            ? this.mattresses.get(componentId)?.sprite
@@ -621,11 +822,42 @@ index 141b4d6..aaf293d 100644
      if (visual) {
        this.tweens.add({
          targets: visual,
+diff --git a/src/game/contactRules.ts b/src/game/contactRules.ts
+index fa8796c..e532bbf 100644
+--- a/src/game/contactRules.ts
++++ b/src/game/contactRules.ts
+@@ -10,6 +10,18 @@ export interface ContactVector {
+   y: number;
+ }
+ 
++export function canCaptureGoal(
++  velocity: Readonly<ContactVector>,
++  maxEntryHorizontalSpeed: number | undefined,
++  minEntryVerticalSpeed: number | undefined,
++): boolean {
++  return (
++    (maxEntryHorizontalSpeed === undefined ||
++      Math.abs(velocity.x) <= maxEntryHorizontalSpeed) &&
++    (minEntryVerticalSpeed === undefined || velocity.y >= minEntryVerticalSpeed)
++  );
++}
++
+ export function addContactVectors(
+   velocity: Readonly<ContactVector>,
+   impulse: Readonly<ContactVector>,
 diff --git a/src/game/headlessSimulation.ts b/src/game/headlessSimulation.ts
-index 973de35..d9b746f 100644
+index 973de35..0bb9dd1 100644
 --- a/src/game/headlessSimulation.ts
 +++ b/src/game/headlessSimulation.ts
-@@ -99,6 +99,7 @@ export interface SimulationRampPlacement {
+@@ -7,6 +7,7 @@ import {
+ } from "./autonomousActors";
+ import {
+   addContactVectors,
++  canCaptureGoal,
+   executeContactRules,
+   redirectVelocity,
+   type ContactParticipant,
+@@ -99,6 +100,7 @@ export interface SimulationRampPlacement {
  export interface SimulationPlacements {
    ramps?: readonly SimulationRampPlacement[];
    mattresses?: readonly import("../levels/levelTypes").MattressDefinition[];
@@ -633,7 +865,7 @@ index 973de35..d9b746f 100644
  }
  
  export interface SimulationOptions {
-@@ -113,7 +114,11 @@ export function simulateReferenceSolution(
+@@ -113,7 +115,11 @@ export function simulateReferenceSolution(
  ): SimulationResult {
    return simulate(
      level,
@@ -646,7 +878,7 @@ index 973de35..d9b746f 100644
      options,
    );
  }
-@@ -347,6 +352,17 @@ export function simulate(
+@@ -347,6 +353,17 @@ export function simulate(
      add(body);
      register(body, "mattress", mattress.id);
    }
@@ -664,6 +896,23 @@ index 973de35..d9b746f 100644
  
    for (const ball of level.balls) {
      if (ball.initiallyPlaced === false) continue;
+@@ -422,7 +439,15 @@ export function simulate(
+             ? second
+             : undefined;
+       const goalContact = first.tag === "goal" || second.tag === "goal";
+-      if (goalBall && goalContact) {
++      if (
++        goalBall &&
++        goalContact &&
++        canCaptureGoal(
++          goalBall.body.velocity,
++          level.goal.maxEntryHorizontalSpeed,
++          level.goal.minEntryVerticalSpeed,
++        )
++      ) {
+         solved = true;
+         events.push({ type: "goal", tick, ballId: goalBall.id });
+       }
 diff --git a/src/game/storybookAssets.ts b/src/game/storybookAssets.ts
 index 1584ea5..df35b1c 100644
 --- a/src/game/storybookAssets.ts
@@ -689,10 +938,23 @@ index 1584ea5..df35b1c 100644
      source: "docs/design/phase2/reference-art/part/marble_v1.png",
      textureKey: "storybook-marble",
 diff --git a/src/levels/levelTypes.ts b/src/levels/levelTypes.ts
-index 5e689b8..5743ec2 100644
+index 5e689b8..2c8ef1d 100644
 --- a/src/levels/levelTypes.ts
 +++ b/src/levels/levelTypes.ts
-@@ -42,6 +42,13 @@ export interface TrayMattressDefinition extends Omit<MattressDefinition, "id"> {
+@@ -17,6 +17,12 @@ export interface RectangleDefinition extends Point {
+   height: number;
+ }
+ 
++/** A goal can require a near-vertical entry into its catch area. */
++export interface GoalDefinition extends RectangleDefinition {
++  maxEntryHorizontalSpeed?: number;
++  minEntryVerticalSpeed?: number;
++}
++
+ export type PartOwnership = "fixed" | "player";
+ 
+ export interface LevelPartDefinition extends RectangleDefinition {
+@@ -42,6 +48,13 @@ export interface TrayMattressDefinition extends Omit<MattressDefinition, "id"> {
    spawn: Point;
  }
  
@@ -706,7 +968,7 @@ index 5e689b8..5743ec2 100644
  export interface MattressSnapTarget extends Point {
    tolerance: number;
  }
-@@ -161,6 +168,7 @@ export interface StorybookPresentation {
+@@ -161,6 +174,7 @@ export interface StorybookPresentation {
    ball: StorybookRenderDefinition;
    ramp?: StorybookRenderDefinition;
    mattress?: StorybookRenderDefinition;
@@ -714,7 +976,7 @@ index 5e689b8..5743ec2 100644
    goal: StorybookRenderDefinition & {
      solvedAsset: StorybookAssetId;
      sparkle?: StorybookRenderDefinition;
-@@ -177,6 +185,7 @@ export interface ReferenceSolution {
+@@ -177,6 +191,7 @@ export interface ReferenceSolution {
    id: string;
    ramps?: ReferenceRampPlacement[];
    mattresses?: MattressDefinition[];
@@ -722,7 +984,7 @@ index 5e689b8..5743ec2 100644
  }
  
  export function isPlayerPart(
-@@ -202,6 +211,7 @@ export interface LevelDefinition {
+@@ -202,6 +217,7 @@ export interface LevelDefinition {
    inventory: InventoryDefinition;
    trayRamp?: TrayRampDefinition;
    trayMattress?: TrayMattressDefinition;
@@ -730,14 +992,17 @@ index 5e689b8..5743ec2 100644
    rampSnapTargets?: RampSnapTarget[];
    mattressSnapTargets?: MattressSnapTarget[];
    storybookPresentation?: StorybookPresentation;
-@@ -211,6 +221,7 @@ export interface LevelDefinition {
+@@ -211,8 +227,9 @@ export interface LevelDefinition {
    balls: BallDefinition[];
    ramps: RampDefinition[];
    mattresses: MattressDefinition[];
 +  teapots: TeapotDefinition[];
    blocks: BlockDefinition[];
    floor: RectangleDefinition;
-   goal: RectangleDefinition;
+-  goal: RectangleDefinition;
++  goal: GoalDefinition;
+   gravity: Point;
+ }
 diff --git a/src/levels/partRegistry.ts b/src/levels/partRegistry.ts
 index 590c1fe..b00854a 100644
 --- a/src/levels/partRegistry.ts
@@ -771,10 +1036,18 @@ index 78502d4..27123df 100644
  
  if (new Set(levels.map((level) => level.id)).size !== levels.length) {
 diff --git a/src/levels/validateLevel.ts b/src/levels/validateLevel.ts
-index cf1d792..ae4f3e3 100644
+index cf1d792..7946713 100644
 --- a/src/levels/validateLevel.ts
 +++ b/src/levels/validateLevel.ts
-@@ -19,6 +19,8 @@ import type {
+@@ -8,6 +8,7 @@ import type {
+   ContactParticipantSelector,
+   ContactRule,
+   ContactTag,
++  GoalDefinition,
+   InventoryDefinition,
+   LevelDefinition,
+   MattressDefinition,
+@@ -19,6 +20,8 @@ import type {
    ReferenceSolution,
    RectangleDefinition,
    StorybookPresentation,
@@ -783,7 +1056,27 @@ index cf1d792..ae4f3e3 100644
    TrayRampDefinition,
    TrayMattressDefinition,
  } from "./levelTypes";
-@@ -89,6 +91,16 @@ const isTrayMattress = (value: unknown): value is TrayMattressDefinition =>
+@@ -49,6 +52,19 @@ function isRectangle(value: unknown): value is RectangleDefinition {
+   );
+ }
+ 
++function isGoal(value: unknown): value is GoalDefinition {
++  if (!isRectangle(value)) return false;
++  const goal = value as GoalDefinition;
++  return (
++    (goal.maxEntryHorizontalSpeed === undefined ||
++      (isFiniteNumber(goal.maxEntryHorizontalSpeed) &&
++        goal.maxEntryHorizontalSpeed >= 0)) &&
++    (goal.minEntryVerticalSpeed === undefined ||
++      (isFiniteNumber(goal.minEntryVerticalSpeed) &&
++        goal.minEntryVerticalSpeed >= 0))
++  );
++}
++
+ const isBall = (value: unknown): value is BallDefinition =>
+   isRecord(value) &&
+   isPoint(value) &&
+@@ -89,6 +105,16 @@ const isTrayMattress = (value: unknown): value is TrayMattressDefinition =>
    isMattress({ ...value, id: "tray" }) &&
    isPoint(value.spawn);
  
@@ -800,7 +1093,7 @@ index cf1d792..ae4f3e3 100644
  const isMattressSnapTarget = (value: unknown): value is MattressSnapTarget =>
    isRecord(value) &&
    isPoint(value) &&
-@@ -132,7 +144,14 @@ const isStorybookPresentation = (
+@@ -132,7 +158,14 @@ const isStorybookPresentation = (
      !isStorybookRenderDefinition(value.mattress)
    )
      return false;
@@ -816,7 +1109,7 @@ index cf1d792..ae4f3e3 100644
    return (
      value.goal.sparkle === undefined ||
      isStorybookRenderDefinition(value.goal.sparkle)
-@@ -153,8 +172,16 @@ function validateReferenceSolutions(value: unknown): ReferenceSolution[] {
+@@ -153,8 +186,16 @@ function validateReferenceSolutions(value: unknown): ReferenceSolution[] {
        (solution.mattresses !== undefined &&
          (!Array.isArray(solution.mattresses) ||
            !solution.mattresses.every(isMattress))) ||
@@ -835,7 +1128,7 @@ index cf1d792..ae4f3e3 100644
      ) {
        throw new Error(
          `Level reference solution ${index} must contain at least one placement.`,
-@@ -178,10 +205,20 @@ function validateReferenceSolutions(value: unknown): ReferenceSolution[] {
+@@ -178,10 +219,20 @@ function validateReferenceSolutions(value: unknown): ReferenceSolution[] {
          `Level reference solution ${index} Mattress placement ids must be unique.`,
        );
      }
@@ -856,7 +1149,7 @@ index cf1d792..ae4f3e3 100644
      };
    });
    if (
-@@ -445,6 +482,7 @@ export function validateLevel(value: unknown): LevelDefinition {
+@@ -445,6 +496,7 @@ export function validateLevel(value: unknown): LevelDefinition {
      inventory,
      trayRamp,
      trayMattress,
@@ -864,7 +1157,7 @@ index cf1d792..ae4f3e3 100644
      rampSnapTargets,
      mattressSnapTargets,
      storybookPresentation,
-@@ -454,6 +492,7 @@ export function validateLevel(value: unknown): LevelDefinition {
+@@ -454,6 +506,7 @@ export function validateLevel(value: unknown): LevelDefinition {
      balls,
      ramps,
      mattresses,
@@ -872,7 +1165,7 @@ index cf1d792..ae4f3e3 100644
      blocks,
      floor,
      goal,
-@@ -487,6 +526,8 @@ export function validateLevel(value: unknown): LevelDefinition {
+@@ -487,6 +540,8 @@ export function validateLevel(value: unknown): LevelDefinition {
    }
    if (trayMattress !== undefined && !isTrayMattress(trayMattress))
      throw new Error("Level trayMattress must be valid.");
@@ -881,7 +1174,7 @@ index cf1d792..ae4f3e3 100644
    if (
      rampSnapTargets !== undefined &&
      (!Array.isArray(rampSnapTargets) ||
-@@ -572,17 +613,31 @@ export function validateLevel(value: unknown): LevelDefinition {
+@@ -572,17 +627,31 @@ export function validateLevel(value: unknown): LevelDefinition {
    if (new Set(blocks.map((block) => block.id)).size !== blocks.length) {
      throw new Error("Level block ids must be unique.");
    }
@@ -913,7 +1206,16 @@ index cf1d792..ae4f3e3 100644
        balls.length +
        validatedActors.length
    ) {
-@@ -608,6 +663,7 @@ export function validateLevel(value: unknown): LevelDefinition {
+@@ -591,7 +660,7 @@ export function validateLevel(value: unknown): LevelDefinition {
+   if (!isRectangle(floor)) {
+     throw new Error("Level floor must be a valid rectangle.");
+   }
+-  if (!isRectangle(goal)) {
++  if (!isGoal(goal)) {
+     throw new Error("Level goal must be a valid rectangle.");
+   }
+   if (!isPoint(gravity)) {
+@@ -608,6 +677,7 @@ export function validateLevel(value: unknown): LevelDefinition {
      inventory,
      ...(trayRamp === undefined ? {} : { trayRamp }),
      ...(trayMattress === undefined ? {} : { trayMattress }),
@@ -921,7 +1223,7 @@ index cf1d792..ae4f3e3 100644
      ...(rampSnapTargets === undefined ? {} : { rampSnapTargets }),
      ...(mattressSnapTargets === undefined ? {} : { mattressSnapTargets }),
      ...(storybookPresentation === undefined ? {} : { storybookPresentation }),
-@@ -619,6 +675,7 @@ export function validateLevel(value: unknown): LevelDefinition {
+@@ -619,6 +689,7 @@ export function validateLevel(value: unknown): LevelDefinition {
      balls,
      ramps,
      mattresses: validatedMattresses,
@@ -1273,12 +1575,13 @@ index d7610eb..7c7e29d 100644
      ]);
    });
  
+
 diff --git a/e2e/teaTime.e2e.ts b/e2e/teaTime.e2e.ts
 new file mode 100644
-index 0000000..a124ab9
+index 0000000..75517d4
 --- /dev/null
 +++ b/e2e/teaTime.e2e.ts
-@@ -0,0 +1,106 @@
+@@ -0,0 +1,199 @@
 +import { expect, test, type Locator, type Page } from "@playwright/test";
 +
 +async function gamePoint(canvas: Locator, point: { x: number; y: number }) {
@@ -1302,6 +1605,78 @@ index 0000000..a124ab9
 +  await page.mouse.down();
 +  await page.mouse.move(end.x, end.y, { steps: 12 });
 +  await page.mouse.up();
++}
++
++async function openTeaTime(page: Page) {
++  await page.goto("/");
++  await expect(page.locator("#game-container canvas")).toBeVisible();
++  await page.getByRole("button", { name: "Settings" }).click();
++  await page.getByLabel("Puzzle locking").check();
++  await page.getByLabel("Unlock all puzzles").check();
++  await page.locator("#puzzle-selector-button").click();
++  await page.locator('[data-puzzle-id="tea-time-008"]').click();
++  await expect(page.locator("#puzzle-title-label")).toHaveText("Tea Time");
++}
++
++interface BrowserTeaTimeResult {
++  contacts: string[][];
++  goalReached: boolean;
++  teapotVelocity?: { x: number; y: number };
++}
++
++async function runBrowserMatterTicks(
++  page: Page,
++  ticks: number,
++): Promise<BrowserTeaTimeResult> {
++  return page.evaluate((tickCount) => {
++    const scene =
++      window.__contraptionLabTest?.getPrototypeScene() as unknown as {
++        matter: {
++          world: {
++            on: (
++              event: string,
++              callback: (event: {
++                pairs: Array<{
++                  bodyA: { label: string; velocity: { x: number; y: number } };
++                  bodyB: { label: string; velocity: { x: number; y: number } };
++                }>;
++              }) => void,
++            ) => void;
++          };
++        };
++        setSimulationRunning: (running: boolean) => void;
++        update: (time: number, delta: number) => void;
++      };
++    if (!scene) throw new Error("Prototype scene is unavailable.");
++
++    const contacts: string[][] = [];
++    let teapotVelocity: { x: number; y: number } | undefined;
++    scene.matter.world.on("collisionstart", (event) => {
++      for (const pair of event.pairs) {
++        const labels = [pair.bodyA.label, pair.bodyB.label];
++        contacts.push(labels);
++        if (
++          labels.includes("ball:tea-marble") &&
++          labels.includes("teapot:tray-teapot-1")
++        ) {
++          const ball =
++            pair.bodyA.label === "ball:tea-marble" ? pair.bodyA : pair.bodyB;
++          teapotVelocity = { ...ball.velocity };
++        }
++      }
++    });
++    scene.setSimulationRunning(true);
++    for (let tick = 0; tick < tickCount; tick += 1) {
++      scene.update(0, 1000 / 60);
++    }
++    scene.setSimulationRunning(false);
++    return {
++      contacts,
++      goalReached:
++        document.querySelector("#mode-label")?.textContent === "Mode: Success",
++      teapotVelocity,
++    };
++  }, ticks);
 +}
 +
 +test("places the Storybook Teapot and Plank, then solves Tea Time", async ({
@@ -1375,16 +1750,329 @@ index 0000000..a124ab9
 +      underTable: true,
 +    });
 +  await page.locator("#simulation-button").click();
-+  await expect(page.locator("#rerun-button")).toBeEnabled();
-+  await page.locator("#rerun-button").click();
-+  await expect(page.locator("#mode-label")).toHaveText("Mode: Success", {
-+    timeout: 20_000,
-+  });
++  const result = await runBrowserMatterTicks(page, 600);
++  expect(
++    result.contacts.some(
++      (labels) =>
++        labels.includes("ball:tea-marble") &&
++        labels.includes("teapot:tray-teapot-1"),
++    ),
++  ).toBe(true);
++  expect(result.teapotVelocity).toBeDefined();
++  expect(result.teapotVelocity!.x).toBeLessThan(0);
++  expect(result.teapotVelocity!.y).toBeGreaterThan(0);
++  expect(result.goalReached).toBe(true);
 +  await page.getByRole("button", { name: "Reset" }).click();
 +  await expect(page.locator("#tray-teapot-label")).toHaveText("Teapot (1)");
 +  await expect(page.locator("#tray-ramp-label")).toHaveText("Ramp (1)");
 +  expect(errors).toEqual([]);
 +});
++
++test("does not send the marble to the cup without a Teapot contact", async ({
++  page,
++}) => {
++  await openTeaTime(page);
++
++  await page.locator("#simulation-button").click();
++  const result = await runBrowserMatterTicks(page, 600);
++
++  expect(result.goalReached).toBe(false);
++  expect(
++    result.contacts.flat().some((label) => label.startsWith("teapot:")),
++  ).toBe(false);
++});
+
+diff --git a/src/levels/teaTime.json b/src/levels/teaTime.json
+new file mode 100644
+index 0000000..65a31d5
+--- /dev/null
++++ b/src/levels/teaTime.json
+@@ -0,0 +1,156 @@
++{
++  "id": "tea-time-008",
++  "levelName": "Tea Time",
++  "title": "Tea Time",
++  "difficulty": "Basic",
++  "order": 8,
++  "inventory": { "ramp": 1, "teapot": 1 },
++  "trayRamp": {
++    "x": 0,
++    "y": 0,
++    "width": 230,
++    "height": 24,
++    "rotation": 0,
++    "ownership": "player",
++    "spawn": { "x": 520, "y": 180 }
++  },
++  "rampSnapTargets": [
++    { "x": 490, "y": 307, "rotation": 0.17, "tolerance": 145 }
++  ],
++  "trayTeapot": {
++    "x": 0,
++    "y": 0,
++    "width": 80,
++    "height": 100,
++    "ownership": "player",
++    "spawn": { "x": 650, "y": 340 }
++  },
++  "storybookPresentation": {
++    "environment": { "asset": "corner_l3", "width": 960, "height": 540 },
++    "ball": { "asset": "marble", "width": 56, "height": 56 },
++    "ramp": { "asset": "plank", "width": 230, "height": 52 },
++    "teapot": { "asset": "teapot_idle", "width": 164, "height": 124 },
++    "goal": {
++      "asset": "teacup_empty",
++      "solvedAsset": "teacup_goal",
++      "width": 112,
++      "height": 112,
++      "sparkle": { "asset": "sparkle", "width": 86, "height": 86 }
++    }
++  },
++  "referenceSolutions": [
++    {
++      "id": "normal-plank-pour-through",
++      "ramps": [
++        {
++          "id": "l3-plank",
++          "x": 490,
++          "y": 307,
++          "width": 230,
++          "height": 24,
++          "rotation": 0.17,
++          "ownership": "player"
++        }
++      ],
++      "teapots": [
++        {
++          "id": "l3-teapot",
++          "x": 650,
++          "y": 340,
++          "width": 80,
++          "height": 100,
++          "ownership": "player"
++        }
++      ]
++    },
++    {
++      "id": "star-no-plank-direct-roll",
++      "teapots": [
++        {
++          "id": "l3-teapot",
++          "x": 650,
++          "y": 340,
++          "width": 80,
++          "height": 100,
++          "ownership": "player"
++        }
++      ]
++    }
++  ],
++  "contactRules": [
++    {
++      "contacts": ["ball", "teapot"],
++      "action": {
++        "type": "redirect",
++        "target": { "type": "contact", "index": 0 },
++        "direction": { "x": -0.08, "y": 1 }
++      }
++    }
++  ],
++  "actors": [],
++  "balls": [
++    {
++      "id": "tea-marble",
++      "x": 250,
++      "y": 235,
++      "radius": 18,
++      "ownership": "fixed"
++    }
++  ],
++  "ramps": [],
++  "mattresses": [],
++  "teapots": [],
++  "blocks": [
++    {
++      "id": "tabletop-left-geometry",
++      "x": 380,
++      "y": 280,
++      "width": 350,
++      "height": 30,
++      "rotation": 0.17,
++      "ownership": "fixed"
++    },
++    {
++      "id": "tabletop-center-geometry",
++      "x": 400,
++      "y": 365,
++      "width": 340,
++      "height": 32,
++      "ownership": "fixed"
++    },
++    {
++      "id": "tabletop-right-geometry",
++      "x": 760,
++      "y": 365,
++      "width": 100,
++      "height": 32,
++      "ownership": "fixed"
++    },
++    {
++      "id": "table-leg-left-geometry",
++      "x": 320,
++      "y": 430,
++      "width": 38,
++      "height": 150,
++      "ownership": "fixed"
++    },
++    {
++      "id": "table-leg-right-geometry",
++      "x": 680,
++      "y": 430,
++      "width": 38,
++      "height": 250,
++      "ownership": "fixed"
++    }
++  ],
++  "floor": { "x": 480, "y": 530, "width": 960, "height": 20 },
++  "goal": {
++    "x": 590,
++    "y": 445,
++    "width": 92,
++    "height": 92,
++    "maxEntryHorizontalSpeed": 1,
++    "minEntryVerticalSpeed": 1
++  },
++  "gravity": { "x": 0, "y": 1 }
++}
+
+diff --git a/tests/teaTime.test.ts b/tests/teaTime.test.ts
+new file mode 100644
+index 0000000..a9a7a33
+--- /dev/null
++++ b/tests/teaTime.test.ts
+@@ -0,0 +1,121 @@
++import { describe, expect, it } from "vitest";
++import rawTeaTime from "../src/levels/teaTime.json";
++import {
++  simulate,
++  simulateReferenceSolution,
++} from "../src/game/headlessSimulation";
++import { builtInPuzzles } from "../src/levels/puzzleCatalog";
++import { validateLevel } from "../src/levels/validateLevel";
++import {
++  createInitialGameState,
++  transitionGameState,
++} from "../src/state/gameState";
++
++const level = validateLevel(rawTeaTime);
++
++describe("Tea Time", () => {
++  it("is the eighth Basic catalog level with a Teapot and one Plank", () => {
++    expect(builtInPuzzles.at(-1)).toMatchObject({
++      id: "tea-time-008",
++      order: 8,
++      difficulty: "Basic",
++    });
++    expect(level.inventory).toEqual({ ramp: 1, teapot: 1 });
++    expect(level.referenceSolutions?.map((solution) => solution.id)).toEqual([
++      "normal-plank-pour-through",
++      "star-no-plank-direct-roll",
++    ]);
++  });
++
++  it("redirects through explicit Teapot sensor geometry in both named routes", () => {
++    for (const solution of level.referenceSolutions ?? []) {
++      const first = simulateReferenceSolution(level, solution, {
++        maxTicks: 1_200,
++      });
++      expect(first.solved).toBe(true);
++      expect(
++        first.events.some(
++          (event) =>
++            event.type === "redirect" &&
++            event.participant === "ball:tea-marble",
++        ),
++      ).toBe(true);
++      expect(first.events.at(-1)).toMatchObject({
++        type: "goal",
++        ballId: "tea-marble",
++      });
++      expect(
++        simulateReferenceSolution(level, solution, { maxTicks: 1_200 }),
++      ).toEqual(first);
++    }
++  });
++
++  it("does not solve when no Teapot contact can redirect the marble", () => {
++    const result = simulate(level, {}, { maxTicks: 1_200 });
++
++    expect(result.solved).toBe(false);
++    expect(result.events).not.toContainEqual({
++      type: "goal",
++      tick: expect.any(Number),
++      ballId: "tea-marble",
++    });
++    expect(result.events.some((event) => event.type === "redirect")).toBe(
++      false,
++    );
++  });
++
++  it("keeps the star route materially Plank-free", () => {
++    const normal = level.referenceSolutions![0]!;
++    const star = level.referenceSolutions![1]!;
++    expect(normal.ramps).toHaveLength(1);
++    expect(star.ramps).toBeUndefined();
++    expect(
++      simulateReferenceSolution(level, normal, { maxTicks: 1_200 }).events.some(
++        (event) =>
++          event.type === "contact" &&
++          event.participants.includes("ramp:l3-plank"),
++      ),
++    ).toBe(true);
++  });
++
++  it("places the cup below the tabletop geometry", () => {
++    const tabletop = level.blocks.find(
++      (block) => block.id === "tabletop-center-geometry",
++    );
++    expect(tabletop).toBeDefined();
++    expect(level.goal.y).toBeGreaterThan(tabletop!.y);
++  });
++
++  it("validates Teapot reference placements", () => {
++    const duplicate = structuredClone(rawTeaTime);
++    duplicate.referenceSolutions[1]!.teapots!.push({
++      ...duplicate.referenceSolutions[1]!.teapots![0]!,
++    });
++    expect(() => validateLevel(duplicate)).toThrow(
++      "Teapot placement ids must be unique",
++    );
++  });
++
++  it("restores Teapot and Plank inventory on rerun and reset", () => {
++    const initial = createInitialGameState(level.inventory);
++    const withTeapot = transitionGameState(initial, {
++      type: "spawn-tray-teapot",
++      componentId: "tray-teapot-1",
++    });
++    const placed = transitionGameState(withTeapot, {
++      type: "spawn-tray-ramp",
++      componentId: "tray-ramp-1",
++    });
++    expect(placed.trayTeapotCount).toBe(0);
++    expect(placed.trayRampCount).toBe(0);
++    const running = transitionGameState(placed, "toggle-simulation");
++    expect(transitionGameState(running, "rerun")).toMatchObject({
++      trayTeapotCount: 0,
++      trayRampCount: 0,
++    });
++    expect(transitionGameState(running, "reset")).toMatchObject({
++      trayTeapotCount: 1,
++      trayRampCount: 1,
++    });
++  });
++});
+
 diff --git a/src/assets/storybook/corner_L3_v1.png b/src/assets/storybook/corner_L3_v1.png
 new file mode 100644
 index 0000000000000000000000000000000000000000..a27cf5f7519a4538026d68559d14b2c78d596222
@@ -37288,275 +37976,4 @@ w5ANVXhR-edMCs+g8kYGaeI<n$#81ZmAFZOXw7wu!Hvj+t07*qoM6N<$g4}k6Bme*a
 literal 0
 HcmV?d00001
 
-diff --git a/src/levels/teaTime.json b/src/levels/teaTime.json
-new file mode 100644
-index 0000000..9d1b533
---- /dev/null
-+++ b/src/levels/teaTime.json
-@@ -0,0 +1,156 @@
-+{
-+  "id": "tea-time-008",
-+  "levelName": "Tea Time",
-+  "title": "Tea Time",
-+  "difficulty": "Basic",
-+  "order": 8,
-+  "inventory": { "ramp": 1, "teapot": 1 },
-+  "trayRamp": {
-+    "x": 0,
-+    "y": 0,
-+    "width": 230,
-+    "height": 24,
-+    "rotation": 0,
-+    "ownership": "player",
-+    "spawn": { "x": 520, "y": 180 }
-+  },
-+  "rampSnapTargets": [
-+    { "x": 490, "y": 307, "rotation": 0.17, "tolerance": 145 }
-+  ],
-+  "trayTeapot": {
-+    "x": 0,
-+    "y": 0,
-+    "width": 124,
-+    "height": 94,
-+    "ownership": "player",
-+    "spawn": { "x": 650, "y": 340 }
-+  },
-+  "storybookPresentation": {
-+    "environment": { "asset": "corner_l3", "width": 960, "height": 540 },
-+    "ball": { "asset": "marble", "width": 56, "height": 56 },
-+    "ramp": { "asset": "plank", "width": 230, "height": 52 },
-+    "teapot": { "asset": "teapot_idle", "width": 164, "height": 124 },
-+    "goal": {
-+      "asset": "teacup_empty",
-+      "solvedAsset": "teacup_goal",
-+      "width": 112,
-+      "height": 112,
-+      "sparkle": { "asset": "sparkle", "width": 86, "height": 86 }
-+    }
-+  },
-+  "referenceSolutions": [
-+    {
-+      "id": "normal-plank-pour-through",
-+      "ramps": [
-+        {
-+          "id": "l3-plank",
-+          "x": 490,
-+          "y": 307,
-+          "width": 230,
-+          "height": 24,
-+          "rotation": 0.17,
-+          "ownership": "player"
-+        }
-+      ],
-+      "teapots": [
-+        {
-+          "id": "l3-teapot",
-+          "x": 650,
-+          "y": 340,
-+          "width": 80,
-+          "height": 100,
-+          "ownership": "player"
-+        }
-+      ]
-+    },
-+    {
-+      "id": "star-no-plank-direct-roll",
-+      "teapots": [
-+        {
-+          "id": "l3-teapot",
-+          "x": 650,
-+          "y": 340,
-+          "width": 80,
-+          "height": 100,
-+          "ownership": "player"
-+        }
-+      ]
-+    }
-+  ],
-+  "contactRules": [
-+    {
-+      "contacts": ["ball", "teapot"],
-+      "conditions": [
-+        {
-+          "type": "participant-id",
-+          "target": { "type": "contact", "index": 1 },
-+          "equals": "l3-teapot"
-+        }
-+      ],
-+      "action": {
-+        "type": "redirect",
-+        "target": { "type": "contact", "index": 0 },
-+        "direction": { "x": -0.08, "y": 1 }
-+      }
-+    }
-+  ],
-+  "actors": [],
-+  "balls": [
-+    {
-+      "id": "tea-marble",
-+      "x": 250,
-+      "y": 235,
-+      "radius": 18,
-+      "ownership": "fixed"
-+    }
-+  ],
-+  "ramps": [],
-+  "mattresses": [],
-+  "teapots": [],
-+  "blocks": [
-+    {
-+      "id": "tabletop-left-geometry",
-+      "x": 380,
-+      "y": 280,
-+      "width": 350,
-+      "height": 30,
-+      "rotation": 0.17,
-+      "ownership": "fixed"
-+    },
-+    {
-+      "id": "tabletop-center-geometry",
-+      "x": 400,
-+      "y": 365,
-+      "width": 340,
-+      "height": 32,
-+      "ownership": "fixed"
-+    },
-+    {
-+      "id": "tabletop-right-geometry",
-+      "x": 760,
-+      "y": 365,
-+      "width": 100,
-+      "height": 32,
-+      "ownership": "fixed"
-+    },
-+    {
-+      "id": "table-leg-left-geometry",
-+      "x": 320,
-+      "y": 430,
-+      "width": 38,
-+      "height": 150,
-+      "ownership": "fixed"
-+    },
-+    {
-+      "id": "table-leg-right-geometry",
-+      "x": 680,
-+      "y": 430,
-+      "width": 38,
-+      "height": 250,
-+      "ownership": "fixed"
-+    }
-+  ],
-+  "floor": { "x": 480, "y": 530, "width": 960, "height": 20 },
-+  "goal": { "x": 590, "y": 445, "width": 92, "height": 92 },
-+  "gravity": { "x": 0, "y": 1 }
-+}
-diff --git a/tests/teaTime.test.ts b/tests/teaTime.test.ts
-new file mode 100644
-index 0000000..0639351
---- /dev/null
-+++ b/tests/teaTime.test.ts
-@@ -0,0 +1,104 @@
-+import { describe, expect, it } from "vitest";
-+import rawTeaTime from "../src/levels/teaTime.json";
-+import { simulateReferenceSolution } from "../src/game/headlessSimulation";
-+import { builtInPuzzles } from "../src/levels/puzzleCatalog";
-+import { validateLevel } from "../src/levels/validateLevel";
-+import {
-+  createInitialGameState,
-+  transitionGameState,
-+} from "../src/state/gameState";
-+
-+const level = validateLevel(rawTeaTime);
-+
-+describe("Tea Time", () => {
-+  it("is the eighth Basic catalog level with a Teapot and one Plank", () => {
-+    expect(builtInPuzzles.at(-1)).toMatchObject({
-+      id: "tea-time-008",
-+      order: 8,
-+      difficulty: "Basic",
-+    });
-+    expect(level.inventory).toEqual({ ramp: 1, teapot: 1 });
-+    expect(level.referenceSolutions?.map((solution) => solution.id)).toEqual([
-+      "normal-plank-pour-through",
-+      "star-no-plank-direct-roll",
-+    ]);
-+  });
-+
-+  it("redirects through explicit Teapot sensor geometry in both named routes", () => {
-+    for (const solution of level.referenceSolutions ?? []) {
-+      const first = simulateReferenceSolution(level, solution, {
-+        maxTicks: 1_200,
-+      });
-+      expect(first.solved).toBe(true);
-+      expect(
-+        first.events.some(
-+          (event) =>
-+            event.type === "redirect" &&
-+            event.participant === "ball:tea-marble",
-+        ),
-+      ).toBe(true);
-+      expect(first.events.at(-1)).toMatchObject({
-+        type: "goal",
-+        ballId: "tea-marble",
-+      });
-+      expect(
-+        simulateReferenceSolution(level, solution, { maxTicks: 1_200 }),
-+      ).toEqual(first);
-+    }
-+  });
-+
-+  it("keeps the star route materially Plank-free", () => {
-+    const normal = level.referenceSolutions![0]!;
-+    const star = level.referenceSolutions![1]!;
-+    expect(normal.ramps).toHaveLength(1);
-+    expect(star.ramps).toBeUndefined();
-+    expect(
-+      simulateReferenceSolution(level, normal, { maxTicks: 1_200 }).events.some(
-+        (event) =>
-+          event.type === "contact" &&
-+          event.participants.includes("ramp:l3-plank"),
-+      ),
-+    ).toBe(true);
-+  });
-+
-+  it("places the cup below the tabletop geometry", () => {
-+    const tabletop = level.blocks.find(
-+      (block) => block.id === "tabletop-center-geometry",
-+    );
-+    expect(tabletop).toBeDefined();
-+    expect(level.goal.y).toBeGreaterThan(tabletop!.y);
-+  });
-+
-+  it("validates Teapot reference placements", () => {
-+    const duplicate = structuredClone(rawTeaTime);
-+    duplicate.referenceSolutions[1]!.teapots!.push({
-+      ...duplicate.referenceSolutions[1]!.teapots![0]!,
-+    });
-+    expect(() => validateLevel(duplicate)).toThrow(
-+      "Teapot placement ids must be unique",
-+    );
-+  });
-+
-+  it("restores Teapot and Plank inventory on rerun and reset", () => {
-+    const initial = createInitialGameState(level.inventory);
-+    const withTeapot = transitionGameState(initial, {
-+      type: "spawn-tray-teapot",
-+      componentId: "tray-teapot-1",
-+    });
-+    const placed = transitionGameState(withTeapot, {
-+      type: "spawn-tray-ramp",
-+      componentId: "tray-ramp-1",
-+    });
-+    expect(placed.trayTeapotCount).toBe(0);
-+    expect(placed.trayRampCount).toBe(0);
-+    const running = transitionGameState(placed, "toggle-simulation");
-+    expect(transitionGameState(running, "rerun")).toMatchObject({
-+      trayTeapotCount: 0,
-+      trayRampCount: 0,
-+    });
-+    expect(transitionGameState(running, "reset")).toMatchObject({
-+      trayTeapotCount: 1,
-+      trayRampCount: 1,
-+    });
-+  });
-+});
+
