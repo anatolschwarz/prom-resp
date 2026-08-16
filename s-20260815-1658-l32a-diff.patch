@@ -1,9 +1,18 @@
-diff --git a/docs/CODEX_PROMPTS.md b/docs/CODEX_PROMPTS.md
---- a/docs/CODEX_PROMPTS.md
-+++ b/docs/CODEX_PROMPTS.md
+diff --git a/src/levels/teaTime.json b/src/levels/teaTime.json
+--- a/src/levels/teaTime.json
++++ b/src/levels/teaTime.json
 @@
- Then STOP.
- 
-+# Codex diagnostic prompt — #32 tabletop physics vs visible art
-+
- Continue Phase 2 #32 from the CURRENT working tree.
+-      "x": 250,
+-      "y": 220,
++      "x": 400,
++      "y": 300,
+@@
+-      "x": 380,
+-      "y": 280,
++      "x": 483,
++      "y": 378,
+       "width": 350,
+-      "height": 30,
+-      "rotation": 0.17,
++      "height": 36,
++      "rotation": 0.01,
