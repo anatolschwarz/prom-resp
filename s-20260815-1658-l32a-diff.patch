@@ -1,5 +1,5 @@
 diff --git a/docs/CODEX_PROMPTS.md b/docs/CODEX_PROMPTS.md
-index 84d7e0e..0199fed 100644
+index 84d7e0e..04c12fa 100644
 --- a/docs/CODEX_PROMPTS.md
 +++ b/docs/CODEX_PROMPTS.md
 @@ -4592,6 +4592,293 @@ Ensure response + diff reflect the FINAL working tree.
@@ -296,7 +296,7 @@ index 84d7e0e..0199fed 100644
  Start Phase 2 milestone #31 — Chapter 1 L2 “Boing”.
  
  Continue from the current Contraption Lab working tree.
-@@ -5482,3 +5769,666 @@ Use exactly:
+@@ -5482,3 +5769,716 @@ Use exactly:
  `~/code/prom-resp/push-response.sh s-20260815-0041-l31a`
  
  IMPORTANT: append THIS FULL ORIGINAL OPERATIONAL PROMPT VERBATIM to `docs/CODEX_PROMPTS.md`. Do not paraphrase, reconstruct, summarize, or omit any part of it.
@@ -961,6 +961,56 @@ index 84d7e0e..0199fed 100644
 +
 +IMPORTANT: append THIS FULL ORIGINAL OPERATIONAL PROMPT VERBATIM to docs/CODEX_PROMPTS.md.
 +Do not paraphrase, reconstruct, summarize, or omit any part of it.
++
++Then STOP.
++
++Continue Phase 2 #32.
++
++Work ONLY in:
++/home/anatolschwartz/code/contraption-lab
++
++Verify:
++- branch = phase2-32-tea-time
++- do NOT modify /home/anatolschwartz/code/contraption-lab-main
++
++Session token:
++s-20260815-1658-l32a
++
++Close ONLY the remaining slice-2 regression-test gap.
++
++The current tests exercise mainActionRouting.ts but do NOT prove that src/main.ts itself returns before the spawnTray* branches.
++
++Add focused automated coverage that executes the actual main.ts action-routing path and proves:
++
++- begin-held-placement transitions state;
++- inventory remains unchanged;
++- every scene.spawnTray* spy remains untouched;
++- removing/breaking the early return in main.ts would make this test fail.
++
++A minimal test seam/refactor is allowed only if necessary to make the actual main.ts routing testable.
++Do not change observable production behavior.
++
++Do NOT implement slice 3 or change Tea Time physics, held rendering/input, commit/cancel wiring, lifecycle/reset behavior, #30, or #31.
++
++Run:
++- focused relevant tests
++- npm run typecheck
++- npm run lint
++- git diff --check
++
++Do not commit or push Contraption Lab.
++
++Create/update:
++- s-20260815-1658-l32a-response.md
++- s-20260815-1658-l32a-diff.patch
++
++Verify response and patch match exactly.
++
++Handoff using exactly:
++/home/anatolschwartz/code/prom-resp/push-response.sh s-20260815-1658-l32a
++
++IMPORTANT: append THIS FULL ORIGINAL OPERATIONAL PROMPT VERBATIM to docs/CODEX_PROMPTS.md.
++Do not paraphrase, reconstruct, summarize, or omit any part.
 +
 +Then STOP.
 diff --git a/src/main.ts b/src/main.ts
@@ -1861,5 +1911,120 @@ index 0000000..4f99bbb
 +    elements.get("simulation-button")?.click();
 +
 +    expect(actions).toEqual(["toggle-simulation"]);
++  });
++});
+diff --git a/tests/mainRoutingIntegration.test.ts b/tests/mainRoutingIntegration.test.ts
+new file mode 100644
+index 0000000..92f8e9e
+--- /dev/null
++++ b/tests/mainRoutingIntegration.test.ts
+@@ -0,0 +1,109 @@
++import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
++
++const mainTest = vi.hoisted(() => ({
++  controls: {
++    render: vi.fn(),
++    renderTimer: vi.fn(),
++    setEditFeedback: vi.fn(),
++  },
++  onAction: undefined as ((action: unknown) => void) | undefined,
++  scene: {
++    captureRunLayout: vi.fn(),
++    rerunFromSnapshot: vi.fn(),
++    resetLevel: vi.fn(),
++    setBlockTransforms: vi.fn(),
++    setEditSelection: vi.fn(),
++    setRampTransforms: vi.fn(),
++    setSimulationRunning: vi.fn(),
++    spawnTrayBall: vi.fn(),
++    spawnTrayBird: vi.fn(),
++    spawnTrayBlock: vi.fn(),
++    spawnTrayMattress: vi.fn(),
++    spawnTrayRamp: vi.fn(),
++    spawnTrayTeapot: vi.fn(),
++  },
++}));
++
++vi.mock("phaser", () => ({
++  default: {
++    AUTO: "AUTO",
++    Game: class {},
++    Scale: { CENTER_BOTH: "CENTER_BOTH", FIT: "FIT" },
++  },
++}));
++
++vi.mock("../src/game/PrototypeScene", () => ({
++  PrototypeScene: class {
++    constructor() {
++      return mainTest.scene;
++    }
++  },
++}));
++
++vi.mock("../src/ui/Controls", () => ({
++  Controls: class {
++    constructor(onAction: (action: unknown) => void) {
++      mainTest.onAction = onAction;
++    }
++
++    render = mainTest.controls.render;
++    renderTimer = mainTest.controls.renderTimer;
++    setEditFeedback = mainTest.controls.setEditFeedback;
++  },
++}));
++
++const originalWindow = globalThis.window;
++
++beforeAll(async () => {
++  Object.defineProperty(globalThis, "window", {
++    configurable: true,
++    value: {
++      get localStorage(): never {
++        throw new Error("Local storage is unavailable in this test.");
++      },
++      location: { search: "" },
++    },
++  });
++  await import("../src/main");
++});
++
++afterAll(() => {
++  Object.defineProperty(globalThis, "window", {
++    configurable: true,
++    value: originalWindow,
++  });
++});
++
++describe("main.ts held-placement routing", () => {
++  it("returns before every spawn-tray branch after one state transition", () => {
++    for (const spy of Object.values(mainTest.scene)) {
++      spy.mockClear();
++    }
++    mainTest.controls.render.mockClear();
++
++    mainTest.onAction?.({
++      type: "begin-held-placement",
++      placement: {
++        part: "ramp",
++        id: "held-ramp-main-test",
++        transform: { position: { x: 0, y: 0 }, rotation: 0 },
++      },
++    });
++
++    const renderedState = mainTest.controls.render.mock.calls[0]?.[0];
++    expect(mainTest.controls.render).toHaveBeenCalledOnce();
++    expect(renderedState).toMatchObject({
++      heldPlacement: {
++        part: "ramp",
++        id: "held-ramp-main-test",
++      },
++      trayRampCount: 4,
++    });
++    expect(mainTest.scene.spawnTrayBall).not.toHaveBeenCalled();
++    expect(mainTest.scene.spawnTrayBird).not.toHaveBeenCalled();
++    expect(mainTest.scene.spawnTrayBlock).not.toHaveBeenCalled();
++    expect(mainTest.scene.spawnTrayMattress).not.toHaveBeenCalled();
++    expect(mainTest.scene.spawnTrayRamp).not.toHaveBeenCalled();
++    expect(mainTest.scene.spawnTrayTeapot).not.toHaveBeenCalled();
 +  });
 +});
