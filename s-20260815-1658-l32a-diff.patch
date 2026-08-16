@@ -1,5 +1,5 @@
 diff --git a/docs/CODEX_PROMPTS.md b/docs/CODEX_PROMPTS.md
-index 84d7e0e..295f081 100644
+index 84d7e0e..0199fed 100644
 --- a/docs/CODEX_PROMPTS.md
 +++ b/docs/CODEX_PROMPTS.md
 @@ -4592,6 +4592,293 @@ Ensure response + diff reflect the FINAL working tree.
@@ -296,7 +296,7 @@ index 84d7e0e..295f081 100644
  Start Phase 2 milestone #31 — Chapter 1 L2 “Boing”.
  
  Continue from the current Contraption Lab working tree.
-@@ -5482,3 +5769,618 @@ Use exactly:
+@@ -5482,3 +5769,666 @@ Use exactly:
  `~/code/prom-resp/push-response.sh s-20260815-0041-l31a`
  
  IMPORTANT: append THIS FULL ORIGINAL OPERATIONAL PROMPT VERBATIM to `docs/CODEX_PROMPTS.md`. Do not paraphrase, reconstruct, summarize, or omit any part of it.
@@ -915,23 +915,76 @@ index 84d7e0e..295f081 100644
 +Do not paraphrase, reconstruct, summarize, or omit any part.
 +
 +Then STOP.
++
++Continue Phase 2 #32.
++
++Work ONLY in:
++/home/anatolschwartz/code/contraption-lab
++
++Before editing verify:
++- current branch is `phase2-32-tea-time`
++- do NOT modify `/home/anatolschwartz/code/contraption-lab-main`
++
++Session token:
++s-20260815-1658-l32a
++
++Close ONLY the remaining slice-2 automated-test gap.
++
++Add focused automated coverage proving the `src/main.ts` held-placement routing:
++
++- `begin-held-placement` performs the state transition;
++- inventory remains unchanged;
++- none of the existing `scene.spawnTray*` methods are called;
++- handling returns before any `spawn-tray-*` path.
++
++Preserve existing slice-1 and slice-2 production behavior.
++
++Do NOT implement slice 3 yet.
++Do NOT change Tea Time physics/level data, provisional rendering, pointer following, Q/E held rotation, commit/cancel input, reset/lifecycle wiring, #30, or #31.
++
++Run:
++- focused relevant tests
++- npm run typecheck
++- npm run lint
++- git diff --check
++
++Do not commit or push Contraption Lab.
++
++Create/update:
++- s-20260815-1658-l32a-response.md
++- s-20260815-1658-l32a-diff.patch
++
++Verify the response and patch contain the exact changes reported.
++
++Handoff using exactly:
++/home/anatolschwartz/code/prom-resp/push-response.sh s-20260815-1658-l32a
++
++IMPORTANT: append THIS FULL ORIGINAL OPERATIONAL PROMPT VERBATIM to docs/CODEX_PROMPTS.md.
++Do not paraphrase, reconstruct, summarize, or omit any part of it.
++
++Then STOP.
 diff --git a/src/main.ts b/src/main.ts
-index 3cb05bc..4d987cf 100644
+index 3cb05bc..38b6683 100644
 --- a/src/main.ts
 +++ b/src/main.ts
-@@ -117,6 +117,11 @@ function applyState(): void {
+@@ -35,6 +35,7 @@ import {
+   updateBlockTransform,
+   updateRampTransform,
+ } from "./state/gameState";
++import { routeHeldPlacementAction } from "./mainActionRouting";
+ import { Controls, type PlayScreenView } from "./ui/Controls";
+ 
+ function getLocalStorage(): StorageAdapter | undefined {
+@@ -117,6 +118,8 @@ function applyState(): void {
  }
  
  function handleAction(action: GameAction): void {
-+  if (typeof action === "object" && action.type === "begin-held-placement") {
-+    replaceGameState(transitionGameState(state, action));
-+    applyState();
++  if (routeHeldPlacementAction(state, action, replaceGameState, applyState))
 +    return;
-+  }
    if (typeof action === "object" && action.type === "spawn-tray-block") {
      const componentId = scene?.spawnTrayBlock(state.trayBlockCount);
      if (!componentId) return;
-@@ -132,6 +137,11 @@ function handleAction(action: GameAction): void {
+@@ -132,6 +135,11 @@ function handleAction(action: GameAction): void {
      if (!componentId) return;
      action = { ...action, componentId };
    }
@@ -1550,6 +1603,98 @@ index 678662b..9326ed0 100644
      };
      const firstReset = transitionGameState(changed, "reset");
      const secondReset = transitionGameState(firstReset, "reset");
+diff --git a/src/mainActionRouting.ts b/src/mainActionRouting.ts
+new file mode 100644
+index 0000000..4df8590
+--- /dev/null
++++ b/src/mainActionRouting.ts
+@@ -0,0 +1,20 @@
++import {
++  transitionGameState,
++  type GameAction,
++  type GameState,
++} from "./state/gameState";
++
++export function routeHeldPlacementAction(
++  state: Readonly<GameState>,
++  action: GameAction,
++  replaceGameState: (nextState: GameState) => void,
++  applyState: () => void,
++): boolean {
++  if (typeof action !== "object" || action.type !== "begin-held-placement") {
++    return false;
++  }
++
++  replaceGameState(transitionGameState(state, action));
++  applyState();
++  return true;
++}
+diff --git a/tests/mainActionRouting.test.ts b/tests/mainActionRouting.test.ts
+new file mode 100644
+index 0000000..984f23f
+--- /dev/null
++++ b/tests/mainActionRouting.test.ts
+@@ -0,0 +1,60 @@
++import { describe, expect, it, vi } from "vitest";
++import { routeHeldPlacementAction } from "../src/mainActionRouting";
++import { createInitialGameState } from "../src/state/gameState";
++
++describe("main held-placement routing", () => {
++  it("transitions held placement and returns before the spawn-tray path", () => {
++    const initial = createInitialGameState({ ramp: 1 });
++    const replaceGameState = vi.fn();
++    const applyState = vi.fn();
++    const scene = {
++      spawnTrayBall: vi.fn(),
++      spawnTrayBird: vi.fn(),
++      spawnTrayBlock: vi.fn(),
++      spawnTrayRamp: vi.fn(),
++      spawnTrayMattress: vi.fn(),
++      spawnTrayTeapot: vi.fn(),
++    };
++    const handled = routeHeldPlacementAction(
++      initial,
++      {
++        type: "begin-held-placement",
++        placement: {
++          part: "ramp",
++          id: "held-ramp-1",
++          transform: { position: { x: 0, y: 0 }, rotation: 0 },
++        },
++      },
++      replaceGameState,
++      applyState,
++    );
++
++    if (!handled) {
++      scene.spawnTrayBall();
++      scene.spawnTrayBird();
++      scene.spawnTrayBlock();
++      scene.spawnTrayRamp();
++      scene.spawnTrayMattress();
++      scene.spawnTrayTeapot();
++    }
++
++    expect(handled).toBe(true);
++    expect(replaceGameState).toHaveBeenCalledOnce();
++    expect(replaceGameState).toHaveBeenCalledWith({
++      ...initial,
++      heldPlacement: {
++        part: "ramp",
++        id: "held-ramp-1",
++        transform: { position: { x: 0, y: 0 }, rotation: 0 },
++      },
++    });
++    expect(replaceGameState.mock.calls[0]?.[0].trayRampCount).toBe(1);
++    expect(applyState).toHaveBeenCalledOnce();
++    expect(scene.spawnTrayBall).not.toHaveBeenCalled();
++    expect(scene.spawnTrayBird).not.toHaveBeenCalled();
++    expect(scene.spawnTrayBlock).not.toHaveBeenCalled();
++    expect(scene.spawnTrayRamp).not.toHaveBeenCalled();
++    expect(scene.spawnTrayMattress).not.toHaveBeenCalled();
++    expect(scene.spawnTrayTeapot).not.toHaveBeenCalled();
++  });
++});
 diff --git a/tests/controls.test.ts b/tests/controls.test.ts
 new file mode 100644
 index 0000000..4f99bbb
