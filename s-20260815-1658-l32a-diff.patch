@@ -1,8 +1,8 @@
 diff --git a/docs/CODEX_PROMPTS.md b/docs/CODEX_PROMPTS.md
-index 595e647..bc5924b 100644
+index 595e647..c2cb09a 100644
 --- a/docs/CODEX_PROMPTS.md
 +++ b/docs/CODEX_PROMPTS.md
-@@ -6701,3 +6701,166 @@ IMPORTANT: append THIS FULL ORIGINAL OPERATIONAL PROMPT VERBATIM to docs/CODEX_P
+@@ -6701,3 +6701,226 @@ IMPORTANT: append THIS FULL ORIGINAL OPERATIONAL PROMPT VERBATIM to docs/CODEX_P
  Do not paraphrase, reconstruct, summarize, or omit any part of it.
  
  Then STOP.
@@ -161,6 +161,66 @@ index 595e647..bc5924b 100644
 +- s-20260815-1658-l32a-diff.patch
 +
 +Response must report the exact assertion change and exact test results.
++
++Handoff using exactly:
++/home/anatolschwartz/code/prom-resp/push-response.sh s-20260815-1658-l32a
++
++IMPORTANT: append THIS FULL ORIGINAL OPERATIONAL PROMPT VERBATIM to docs/CODEX_PROMPTS.md.
++Do not paraphrase, reconstruct, summarize, or omit any part of it.
++
++Then STOP.
++
++Finalize the reviewed Phase 2 #32 Slice 3 checkpoint.
++
++Work ONLY in:
++/home/anatolschwartz/code/contraption-lab
++
++Verify:
++- branch = phase2-32-tea-time
++- checkpoint f19d69890e8170f986c992b6c21b169308a244d2 is an ancestor of HEAD
++- do NOT modify /home/anatolschwartz/code/contraption-lab-main
++
++Session token:
++s-20260815-1658-l32a
++
++Slice 3 has been reviewed and verified:
++- focused Playwright rerun PASS: 1 test, 20.6s
++- typecheck/lint/git diff --check PASS
++- actual diff reviewed PASS
++
++Commit ONLY the reviewed Slice 3 changes:
++- docs/CODEX_PROMPTS.md
++- e2e/teaTime.e2e.ts
++- src/game/PrototypeScene.ts
++- src/main.ts
++- tests/mainRoutingIntegration.test.ts
++
++Do NOT stage unrelated/pre-existing files.
++
++Before commit:
++- append THIS FULL ORIGINAL OPERATIONAL PROMPT VERBATIM to docs/CODEX_PROMPTS.md
++- stage that prompt-log update
++- run git diff --cached --check
++- run git diff --cached --name-status
++- verify no unrelated files are staged
++
++Create ONE LOCAL commit with message:
++
++wip: checkpoint held placement slice 3
++
++Do NOT push Contraption Lab.
++
++After commit:
++- report commit SHA
++- run git status --short
++- confirm unrelated files remain uncommitted
++- confirm /home/anatolschwartz/code/contraption-lab-main remains untouched
++
++Create/update:
++- s-20260815-1658-l32a-response.md
++- s-20260815-1658-l32a-diff.patch
++
++The diff artifact must contain the checkpoint commit diff itself, not an empty post-commit working-tree diff.
 +
 +Handoff using exactly:
 +/home/anatolschwartz/code/prom-resp/push-response.sh s-20260815-1658-l32a
