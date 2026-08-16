@@ -1,8 +1,16 @@
+commit 65600f6bfb6dfe456ffce748a08e8c8aaaa3b778
+Author:     Anatol Schwarz <anatol2002@gmail.com>
+AuthorDate: Sun Aug 16 20:06:45 2026 +0300
+Commit:     Anatol Schwarz <anatol2002@gmail.com>
+CommitDate: Sun Aug 16 20:06:45 2026 +0300
+
+    wip: checkpoint held placement slice 4
+
 diff --git a/docs/CODEX_PROMPTS.md b/docs/CODEX_PROMPTS.md
-index c2cb09a..5ccab3a 100644
+index c2cb09a..69e764f 100644
 --- a/docs/CODEX_PROMPTS.md
 +++ b/docs/CODEX_PROMPTS.md
-@@ -6924,3 +6924,188 @@ IMPORTANT: append THIS FULL ORIGINAL OPERATIONAL PROMPT VERBATIM to docs/CODEX_P
+@@ -6924,3 +6924,247 @@ IMPORTANT: append THIS FULL ORIGINAL OPERATIONAL PROMPT VERBATIM to docs/CODEX_P
  Do not paraphrase, reconstruct, summarize, or omit any part of it.
  
  Then STOP.
@@ -189,6 +197,65 @@ index c2cb09a..5ccab3a 100644
 +
 +IMPORTANT: append THIS FULL ORIGINAL OPERATIONAL PROMPT VERBATIM to docs/CODEX_PROMPTS.md.
 +Do not paraphrase, reconstruct, summarize, or omit any part.
++
++Then STOP.
++
++Finalize the reviewed Phase 2 #32 Slice 4 checkpoint.
++
++Work ONLY in:
++/home/anatolschwartz/code/contraption-lab
++
++Verify:
++- branch = phase2-32-tea-time
++- checkpoint d77c55387bfada5a81d387cbe020e2999da7610b is an ancestor of HEAD
++- do NOT modify /home/anatolschwartz/code/contraption-lab-main
++
++Session token:
++s-20260815-1658-l32a
++
++Slice 4 and the committed-transform fix have been reviewed and verified:
++- valid held placement commits correctly
++- invalid placement remains held
++- inventory decrements exactly once
++- runtime/Matter/contact registration works
++- held/runtime/visual/Matter transform alignment is fixed
++- focused Playwright PASS
++- unit/typecheck/lint/diff-check PASS
++
++Commit ONLY the current reviewed Slice 4 changes.
++
++Do NOT stage unrelated/pre-existing files.
++
++Before commit:
++- append THIS FULL ORIGINAL OPERATIONAL PROMPT VERBATIM to docs/CODEX_PROMPTS.md
++- stage the reviewed #32 changes plus that prompt-log update
++- run git diff --cached --check
++- run git diff --cached --name-status
++- verify no unrelated files are staged
++
++Create ONE LOCAL commit:
++
++wip: checkpoint held placement slice 4
++
++Do NOT push Contraption Lab.
++
++After commit:
++- report commit SHA
++- report git status --short
++- confirm unrelated files remain uncommitted
++- confirm contraption-lab-main remains untouched
++
++Create/update:
++- s-20260815-1658-l32a-response.md
++- s-20260815-1658-l32a-diff.patch
++
++The diff artifact must contain the checkpoint commit diff itself.
++
++Handoff using exactly:
++/home/anatolschwartz/code/prom-resp/push-response.sh s-20260815-1658-l32a
++
++IMPORTANT: append THIS FULL ORIGINAL OPERATIONAL PROMPT VERBATIM to docs/CODEX_PROMPTS.md.
++Do not paraphrase, reconstruct, summarize, or omit any part of it.
 +
 +Then STOP.
 diff --git a/e2e/teaTime.e2e.ts b/e2e/teaTime.e2e.ts
