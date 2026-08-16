@@ -1,5 +1,5 @@
 diff --git a/docs/CODEX_PROMPTS.md b/docs/CODEX_PROMPTS.md
-index 84d7e0e..e2c8d8a 100644
+index 84d7e0e..295f081 100644
 --- a/docs/CODEX_PROMPTS.md
 +++ b/docs/CODEX_PROMPTS.md
 @@ -4592,6 +4592,293 @@ Ensure response + diff reflect the FINAL working tree.
@@ -296,7 +296,7 @@ index 84d7e0e..e2c8d8a 100644
  Start Phase 2 milestone #31 — Chapter 1 L2 “Boing”.
  
  Continue from the current Contraption Lab working tree.
-@@ -5482,3 +5769,563 @@ Use exactly:
+@@ -5482,3 +5769,618 @@ Use exactly:
  `~/code/prom-resp/push-response.sh s-20260815-0041-l31a`
  
  IMPORTANT: append THIS FULL ORIGINAL OPERATIONAL PROMPT VERBATIM to `docs/CODEX_PROMPTS.md`. Do not paraphrase, reconstruct, summarize, or omit any part of it.
@@ -860,6 +860,89 @@ index 84d7e0e..e2c8d8a 100644
 +Do not paraphrase, reconstruct, summarize, or omit any part of it.
 +
 +Then STOP.
++
++Continue Phase 2 #32 from the CURRENT working tree.
++
++Session token:
++s-20260815-1658-l32a
++
++Implement ONLY held-placement slice 2:
++
++WIRE INVENTORY ACTIONS INTO begin-held-placement.
++
++Current slice 1 is complete and must be preserved.
++
++Required behavior:
++- Parts inventory click must start `begin-held-placement`.
++- Remove/bypass the current immediate scene `spawnTray*` call for this path.
++- Do NOT decrement inventory on inventory click.
++- Do NOT create/register runtime, render, Matter, or contact objects yet.
++- Do NOT implement provisional rendering, pointer-following, Q/E held rotation, commit click, cancel input, or lifecycle cleanup in this slice.
++- Existing normal placed-part behavior must remain unchanged.
++
++Expected scope:
++- `src/ui/Controls.ts`
++- `src/main.ts`
++- directly related action/type plumbing only if required
++- focused tests
++
++Tests must prove:
++- inventory click dispatches begin-held-placement;
++- inventory count remains unchanged;
++- no immediate normal spawn path executes;
++- existing unrelated controls remain unaffected.
++
++Run:
++- focused relevant tests
++- npm run typecheck
++- npm run lint
++- git diff --check
++
++No browser/manual testing required for this wiring-only slice.
++
++Do not commit or push Contraption Lab.
++
++Create/update:
++- s-20260815-1658-l32a-response.md
++- s-20260815-1658-l32a-diff.patch
++
++Verify response and patch contain the exact implementation/test changes reported.
++
++Handoff using exactly:
++/home/anatolschwartz/code/prom-resp/push-response.sh s-20260815-1658-l32a
++
++IMPORTANT: append THIS FULL ORIGINAL OPERATIONAL PROMPT VERBATIM to docs/CODEX_PROMPTS.md.
++Do not paraphrase, reconstruct, summarize, or omit any part.
++
++Then STOP.
+diff --git a/src/main.ts b/src/main.ts
+index 3cb05bc..4d987cf 100644
+--- a/src/main.ts
++++ b/src/main.ts
+@@ -117,6 +117,11 @@ function applyState(): void {
+ }
+ 
+ function handleAction(action: GameAction): void {
++  if (typeof action === "object" && action.type === "begin-held-placement") {
++    replaceGameState(transitionGameState(state, action));
++    applyState();
++    return;
++  }
+   if (typeof action === "object" && action.type === "spawn-tray-block") {
+     const componentId = scene?.spawnTrayBlock(state.trayBlockCount);
+     if (!componentId) return;
+@@ -132,6 +137,11 @@ function handleAction(action: GameAction): void {
+     if (!componentId) return;
+     action = { ...action, componentId };
+   }
++  if (typeof action === "object" && action.type === "spawn-tray-teapot") {
++    const componentId = scene?.spawnTrayTeapot(state.trayTeapotCount);
++    if (!componentId) return;
++    action = { ...action, componentId };
++  }
+   if (typeof action === "object" && action.type === "spawn-tray-ball") {
+     const ball = scene?.spawnTrayBall(state.trayBallCount);
+     if (!ball) return;
 diff --git a/src/state/gameState.ts b/src/state/gameState.ts
 index 5d453ec..d8d8bce 100644
 --- a/src/state/gameState.ts
@@ -1186,6 +1269,114 @@ index 5d453ec..d8d8bce 100644
        runSnapshot: cloneRunSnapshot(state.runSnapshot),
      };
    }
+diff --git a/src/ui/Controls.ts b/src/ui/Controls.ts
+index cb565cc..aac8d06 100644
+--- a/src/ui/Controls.ts
++++ b/src/ui/Controls.ts
+@@ -1,4 +1,5 @@
+ import type { LevelDefinition, PuzzleDifficulty } from "../levels/levelTypes";
++import type { InventoryPartKey } from "../levels/partRegistry";
+ import type { PuzzleProgress } from "../state/progression";
+ import type { ParentSettings } from "../state/parentSettings";
+ import type {
+@@ -79,6 +80,10 @@ export class Controls {
+   private readonly trayMattressLabel = requireElement<HTMLSpanElement>(
+     "tray-mattress-label",
+   );
++  private readonly trayTeapotButton =
++    requireElement<HTMLButtonElement>("tray-teapot-button");
++  private readonly trayTeapotLabel =
++    requireElement<HTMLSpanElement>("tray-teapot-label");
+   private readonly partsPalette = requireElement<HTMLElement>("parts-palette");
+   private readonly partsPaletteToggle = requireElement<HTMLButtonElement>(
+     "parts-palette-toggle",
+@@ -96,9 +101,10 @@ export class Controls {
+     "timer-failure-checkbox",
+   );
+   private puzzleViewKey?: string;
++  private nextHeldPlacementId = 1;
+ 
+   constructor(
+-    onAction: (action: GameAction) => void,
++    private readonly onAction: (action: GameAction) => void,
+     private readonly onPuzzleSelect: (puzzleId: string) => void,
+     private readonly onSetUnlockAll: (unlockAll: boolean) => void,
+     private readonly onSetParentSetting: (
+@@ -113,30 +119,29 @@ export class Controls {
+       reset: requireElement("reset-button"),
+     };
+ 
+-    this.buttons.edit.addEventListener("click", () => onAction("edit"));
++    this.buttons.edit.addEventListener("click", () => this.onAction("edit"));
+     this.buttons.simulation.addEventListener("click", () =>
+-      onAction("toggle-simulation"),
++      this.onAction("toggle-simulation"),
+     );
+-    this.buttons.reset.addEventListener("click", () => onAction("reset"));
+-    this.rerunButton.addEventListener("click", () => onAction("rerun"));
++    this.buttons.reset.addEventListener("click", () => this.onAction("reset"));
++    this.rerunButton.addEventListener("click", () => this.onAction("rerun"));
+     this.trayBlockButton.addEventListener("click", () =>
+-      onAction({ type: "spawn-tray-block", componentId: "" }),
++      this.beginHeldPlacement("block"),
+     );
+     this.trayBallButton.addEventListener("click", () =>
+-      onAction({
+-        type: "spawn-tray-ball",
+-        componentId: "",
+-        transform: { position: { x: 0, y: 0 } },
+-      }),
++      this.beginHeldPlacement("ball"),
+     );
+     this.trayBirdButton.addEventListener("click", () =>
+-      onAction({ type: "spawn-tray-bird", componentId: "" }),
++      this.beginHeldPlacement("bird"),
+     );
+     this.trayRampButton.addEventListener("click", () =>
+-      onAction({ type: "spawn-tray-ramp", componentId: "" }),
++      this.beginHeldPlacement("ramp"),
+     );
+     this.trayMattressButton.addEventListener("click", () =>
+-      onAction({ type: "spawn-tray-mattress", componentId: "" }),
++      this.beginHeldPlacement("mattress"),
++    );
++    this.trayTeapotButton.addEventListener("click", () =>
++      this.beginHeldPlacement("teapot"),
+     );
+     this.partsPaletteToggle.addEventListener("click", () => {
+       this.setPartsPaletteCollapsed(!this.partsPalette.hidden);
+@@ -208,6 +213,13 @@ export class Controls {
+       state.trayMattressCount,
+       state,
+     );
++    this.renderPaletteItem(
++      this.trayTeapotButton,
++      this.trayTeapotLabel,
++      "Teapot",
++      state.trayTeapotCount,
++      state,
++    );
+     this.partsPaletteToggle.disabled = state.mode !== "edit" || state.succeeded;
+     this.rerunButton.disabled = state.mode === "edit" || !state.runSnapshot;
+     this.renderTimer(state, view.parentSettings.timerFailureMode);
+@@ -253,6 +265,17 @@ export class Controls {
+     this.editFeedback.hidden = message.length === 0;
+   }
+ 
++  private beginHeldPlacement(part: InventoryPartKey): void {
++    this.onAction({
++      type: "begin-held-placement",
++      placement: {
++        part,
++        id: `held-${part}-${this.nextHeldPlacementId++}`,
++        transform: { position: { x: 0, y: 0 }, rotation: 0 },
++      },
++    });
++  }
++
+   private renderPaletteItem(
+     button: HTMLButtonElement,
+     label: HTMLSpanElement,
 diff --git a/tests/gameState.test.ts b/tests/gameState.test.ts
 index 678662b..9326ed0 100644
 --- a/tests/gameState.test.ts
@@ -1359,3 +1550,171 @@ index 678662b..9326ed0 100644
      };
      const firstReset = transitionGameState(changed, "reset");
      const secondReset = transitionGameState(firstReset, "reset");
+diff --git a/tests/controls.test.ts b/tests/controls.test.ts
+new file mode 100644
+index 0000000..4f99bbb
+--- /dev/null
++++ b/tests/controls.test.ts
+@@ -0,0 +1,162 @@
++import { afterEach, describe, expect, it } from "vitest";
++import {
++  transitionGameState,
++  createInitialGameState,
++} from "../src/state/gameState";
++import { Controls } from "../src/ui/Controls";
++
++const controlIds = [
++  "edit-button",
++  "simulation-button",
++  "reset-button",
++  "mode-label",
++  "level-progress-label",
++  "puzzle-title-label",
++  "puzzle-difficulty-label",
++  "next-puzzle-button",
++  "puzzle-selector-button",
++  "puzzle-selector-list",
++  "puzzle-selector-panel",
++  "settings-button",
++  "settings-panel",
++  "timer-label",
++  "edit-feedback",
++  "tray-block-button",
++  "tray-block-label",
++  "tray-ball-button",
++  "tray-ball-label",
++  "tray-bird-button",
++  "tray-bird-label",
++  "tray-ramp-button",
++  "tray-ramp-label",
++  "tray-mattress-button",
++  "tray-mattress-label",
++  "tray-teapot-button",
++  "tray-teapot-label",
++  "parts-palette",
++  "parts-palette-toggle",
++  "play-area",
++  "rerun-button",
++  "unlock-all-checkbox",
++  "puzzle-locking-checkbox",
++  "timer-failure-checkbox",
++] as const;
++
++class FakeElement {
++  private readonly listeners = new Map<string, () => void>();
++
++  addEventListener(type: string, listener: () => void): void {
++    this.listeners.set(type, listener);
++  }
++
++  click(): void {
++    this.listeners.get("click")?.();
++  }
++}
++
++const originalDocument = globalThis.document;
++
++afterEach(() => {
++  Object.defineProperty(globalThis, "document", {
++    configurable: true,
++    value: originalDocument,
++  });
++});
++
++function createControls(): {
++  actions: Parameters<ConstructorParameters<typeof Controls>[0]>[0][];
++  elements: Map<string, FakeElement>;
++} {
++  const elements = new Map<string, FakeElement>(
++    controlIds.map((id) => [id, new FakeElement()] as const),
++  );
++  Object.defineProperty(globalThis, "document", {
++    configurable: true,
++    value: {
++      querySelector: <T extends HTMLElement>(selector: string): T | null =>
++        (elements.get(selector.slice(1)) as T | undefined) ?? null,
++    },
++  });
++  const actions: Parameters<ConstructorParameters<typeof Controls>[0]>[0][] =
++    [];
++  new Controls(
++    (action) => actions.push(action),
++    () => undefined,
++    () => undefined,
++    () => undefined,
++    () => undefined,
++  );
++  return { actions, elements };
++}
++
++describe("Parts inventory controls", () => {
++  it("dispatches begin-held-placement without invoking a normal spawn action", () => {
++    const { actions, elements } = createControls();
++
++    elements.get("tray-ramp-button")?.click();
++
++    expect(actions).toEqual([
++      {
++        type: "begin-held-placement",
++        placement: {
++          part: "ramp",
++          id: "held-ramp-1",
++          transform: { position: { x: 0, y: 0 }, rotation: 0 },
++        },
++      },
++    ]);
++    expect(
++      actions.some(
++        (action) =>
++          typeof action === "object" && action.type.startsWith("spawn-tray-"),
++      ),
++    ).toBe(false);
++  });
++
++  it("uses held placement for every placeable inventory part", () => {
++    const { actions, elements } = createControls();
++
++    for (const part of [
++      "block",
++      "ball",
++      "bird",
++      "ramp",
++      "mattress",
++      "teapot",
++    ]) {
++      elements.get(`tray-${part}-button`)?.click();
++    }
++
++    expect(actions).toEqual(
++      ["block", "ball", "bird", "ramp", "mattress", "teapot"].map(
++        (part, index) => ({
++          type: "begin-held-placement",
++          placement: {
++            part,
++            id: `held-${part}-${index + 1}`,
++            transform: { position: { x: 0, y: 0 }, rotation: 0 },
++          },
++        }),
++      ),
++    );
++  });
++
++  it("preserves inventory when an inventory click starts held placement", () => {
++    const { actions, elements } = createControls();
++    const initial = createInitialGameState({ ramp: 1 });
++
++    elements.get("tray-ramp-button")?.click();
++
++    const next = transitionGameState(initial, actions[0]!);
++    expect(next.trayRampCount).toBe(1);
++    expect(next.heldPlacement?.part).toBe("ramp");
++  });
++
++  it("leaves unrelated gameplay controls on their existing actions", () => {
++    const { actions, elements } = createControls();
++
++    elements.get("simulation-button")?.click();
++
++    expect(actions).toEqual(["toggle-simulation"]);
++  });
++});
