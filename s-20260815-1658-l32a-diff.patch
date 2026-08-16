@@ -1,5 +1,5 @@
 diff --git a/docs/CODEX_PROMPTS.md b/docs/CODEX_PROMPTS.md
-index 84d7e0e..b3d85c5 100644
+index 84d7e0e..5c4f39a 100644
 --- a/docs/CODEX_PROMPTS.md
 +++ b/docs/CODEX_PROMPTS.md
 @@ -4592,6 +4592,293 @@ Ensure response + diff reflect the FINAL working tree.
@@ -296,7 +296,7 @@ index 84d7e0e..b3d85c5 100644
  Start Phase 2 milestone #31 — Chapter 1 L2 “Boing”.
  
  Continue from the current Contraption Lab working tree.
-@@ -5482,3 +5769,778 @@ Use exactly:
+@@ -5482,3 +5769,875 @@ Use exactly:
  `~/code/prom-resp/push-response.sh s-20260815-0041-l31a`
  
  IMPORTANT: append THIS FULL ORIGINAL OPERATIONAL PROMPT VERBATIM to `docs/CODEX_PROMPTS.md`. Do not paraphrase, reconstruct, summarize, or omit any part of it.
@@ -1075,36 +1075,110 @@ index 84d7e0e..b3d85c5 100644
 +Do not paraphrase, reconstruct, summarize, or omit any part of it.
 +
 +Then STOP.
++
++Continue Phase 2 #32 checkpoint correction.
++
++Work ONLY in:
++/home/anatolschwartz/code/contraption-lab
++
++Verify:
++- branch = phase2-32-tea-time
++- do NOT modify /home/anatolschwartz/code/contraption-lab-main
++
++Session token:
++s-20260815-1658-l32a
++
++The staged checkpoint review found TWO concrete problems. Fix ONLY these problems plus any directly required test updates.
++
++1. Parts layout regression
++
++Current staged style puts Parts in a desktop right-side column (`grid-column: 2`).
++
++That layout was rejected.
++
++Required layout:
++- game/canvas remains at its existing size/position;
++- Edit/Run/etc controls remain directly below/adjacent as currently intended;
++- Parts panel is BELOW the controls row;
++- opening/closing Parts must NOT resize, distort, or horizontally shift the game canvas;
++- do not restore the rejected side-column layout.
++
++Apply this generically, not Tea Time-specific.
++
++2. Stale Tea Time E2E
++
++`e2e/teaTime.e2e.ts` still assumes inventory clicks immediately spawn parts.
++
++Update it for the current held-placement architecture:
++- inventory click starts held placement;
++- do not expect immediate committed/runtime placement;
++- do not decrement inventory until commit exists in a later slice;
++- keep the test limited to behavior currently implemented.
++
++Also correct stale geometry lookup:
++- current Tea Time level uses `tabletop-left-geometry`;
++- remove/update any stale `tabletop-center-geometry` expectation.
++
++Do NOT implement slice 3 yet:
++- no provisional cursor rendering;
++- no held pointer movement;
++- no Q/E held rotation;
++- no commit/cancel interaction;
++- no held-placement lifecycle wiring.
++
++Do NOT change Tea Time physics/contact behavior unless required solely to make the corrected existing assertions accurate.
++
++Checkpoint/staging requirements:
++- preserve all already-reviewed #32 staged files;
++- do NOT stage unrelated files;
++- keep these excluded:
++  - README.md
++  - README.md.bak
++  - docs/ROADMAP.md.bak
++  - docs/reviews/
++  - s-20260812-1003-c7d4-response.md
++- stage the corrected #32 files after editing.
++
++Run:
++- focused relevant unit tests
++- focused Tea Time Playwright/E2E test(s) that are valid for the CURRENT slice
++- npm run typecheck
++- npm run lint
++- git diff --cached --check
++
++Use bounded browser timeouts and cleanly close browser/context/process handles.
++
++Do NOT commit.
++Do NOT push Contraption Lab.
++
++Regenerate:
++- s-20260815-1658-l32a-response.md
++- s-20260815-1658-l32a-diff.patch
++
++The diff artifact must represent the CURRENT staged checkpoint (`git diff --cached --binary`).
++
++Response must clearly report:
++- layout correction;
++- E2E correction;
++- exact tests/checks run and results;
++- staged file list;
++- any unresolved issue;
++- confirmation that excluded files remain unstaged.
++
++Handoff using exactly:
++/home/anatolschwartz/code/prom-resp/push-response.sh s-20260815-1658-l32a
++
++IMPORTANT: append THIS FULL ORIGINAL OPERATIONAL PROMPT VERBATIM to docs/CODEX_PROMPTS.md.
++Do not paraphrase, reconstruct, summarize, or omit any part of it.
++
++Then STOP.
 diff --git a/e2e/teaTime.e2e.ts b/e2e/teaTime.e2e.ts
 new file mode 100644
-index 0000000..75517d4
+index 0000000..8e3dd39
 --- /dev/null
 +++ b/e2e/teaTime.e2e.ts
-@@ -0,0 +1,199 @@
-+import { expect, test, type Locator, type Page } from "@playwright/test";
-+
-+async function gamePoint(canvas: Locator, point: { x: number; y: number }) {
-+  const box = await canvas.boundingBox();
-+  if (!box) throw new Error("Game canvas is not visible.");
-+  return {
-+    x: box.x + (point.x / 960) * box.width,
-+    y: box.y + (point.y / 540) * box.height,
-+  };
-+}
-+
-+async function movePart(
-+  page: Page,
-+  canvas: Locator,
-+  from: { x: number; y: number },
-+  to: { x: number; y: number },
-+) {
-+  const start = await gamePoint(canvas, from);
-+  const end = await gamePoint(canvas, to);
-+  await page.mouse.move(start.x, start.y);
-+  await page.mouse.down();
-+  await page.mouse.move(end.x, end.y, { steps: 12 });
-+  await page.mouse.up();
-+}
+@@ -0,0 +1,136 @@
++import { expect, test, type Page } from "@playwright/test";
 +
 +async function openTeaTime(page: Page) {
 +  await page.goto("/");
@@ -1178,93 +1252,53 @@ index 0000000..75517d4
 +  }, ticks);
 +}
 +
-+test("places the Storybook Teapot and Plank, then solves Tea Time", async ({
++test("opens Parts below the controls and starts held Teapot placement", async ({
 +  page,
 +}) => {
-+  test.setTimeout(60_000);
-+  const errors: string[] = [];
-+  page.on("pageerror", (error) => errors.push(error.message));
-+  page.on("console", (message) => {
-+    if (message.type() === "error") errors.push(message.text());
-+  });
-+  await page.goto("/");
 +  const canvas = page.locator("#game-container canvas");
-+  await expect(canvas).toBeVisible();
-+  await page.getByRole("button", { name: "Settings" }).click();
-+  await page.getByLabel("Puzzle locking").check();
-+  await page.getByLabel("Unlock all puzzles").check();
-+  await page.locator("#puzzle-selector-button").click();
-+  await page.locator('[data-puzzle-id="tea-time-008"]').click();
-+  await expect(page.locator("#puzzle-title-label")).toHaveText("Tea Time");
-+  if (!(await page.locator("#parts-palette").isVisible()))
++  await openTeaTime(page);
++  const controls = page.locator(".simulation-toolbar");
++  const parts = page.locator("#parts-palette");
++  if (await parts.isVisible())
 +    await page.locator("#parts-palette-toggle").click();
++  const closedCanvasBox = await canvas.boundingBox();
++  await page.locator("#parts-palette-toggle").click();
++  await expect(parts).toBeVisible();
++  const openCanvasBox = await canvas.boundingBox();
++  const controlsBox = await controls.boundingBox();
++  const partsBox = await parts.boundingBox();
++  expect(openCanvasBox).toEqual(closedCanvasBox);
++  expect(partsBox!.y).toBeGreaterThanOrEqual(
++    controlsBox!.y + controlsBox!.height,
++  );
++
 +  await page.locator("#tray-teapot-button").click();
-+  await page.locator("#tray-ramp-button").click();
-+  await movePart(page, canvas, { x: 520, y: 180 }, { x: 490, y: 307 });
 +  await expect
 +    .poll(() =>
 +      page.evaluate(() => {
++        const state = window.__contraptionLabTest?.getGameState();
 +        const scene =
 +          window.__contraptionLabTest?.getPrototypeScene() as unknown as {
-+            teapots: Map<
-+              string,
-+              {
-+                shape: { x: number; y: number };
-+                sprite?: { texture: { key: string } };
-+              }
-+            >;
-+            ramps: Map<
-+              string,
-+              { shape: { x: number; y: number; rotation: number } }
-+            >;
-+            level: {
-+              goal: { x: number; y: number };
-+              blocks: Array<{ id: string; y: number }>;
-+            };
++            teapots: Map<string, unknown>;
 +          };
-+        const teapot = scene?.teapots.get("tray-teapot-1");
-+        const ramp = scene?.ramps.get("tray-ramp-1");
 +        return {
-+          teapot: teapot && {
-+            x: teapot.shape.x,
-+            y: teapot.shape.y,
-+            texture: teapot.sprite?.texture.key,
-+          },
-+          ramp: ramp && {
-+            x: ramp.shape.x,
-+            y: ramp.shape.y,
-+            rotation: ramp.shape.rotation,
-+          },
-+          underTable:
-+            scene.level.goal.y >
-+            scene.level.blocks.find(
-+              (block) => block.id === "tabletop-center-geometry",
-+            )!.y,
++          heldPlacement: state?.heldPlacement,
++          trayRampCount: state?.trayRampCount,
++          trayTeapotCount: state?.trayTeapotCount,
++          runtimeTeapotCount: scene?.teapots.size,
 +        };
 +      }),
 +    )
 +    .toEqual({
-+      teapot: { x: 650, y: 340, texture: "storybook-teapot-idle" },
-+      ramp: { x: 490, y: 307, rotation: 0.17 },
-+      underTable: true,
++      heldPlacement: {
++        part: "teapot",
++        id: "held-teapot-1",
++        transform: { position: { x: 0, y: 0 }, rotation: 0 },
++      },
++      trayRampCount: 1,
++      trayTeapotCount: 1,
++      runtimeTeapotCount: 0,
 +    });
-+  await page.locator("#simulation-button").click();
-+  const result = await runBrowserMatterTicks(page, 600);
-+  expect(
-+    result.contacts.some(
-+      (labels) =>
-+        labels.includes("ball:tea-marble") &&
-+        labels.includes("teapot:tray-teapot-1"),
-+    ),
-+  ).toBe(true);
-+  expect(result.teapotVelocity).toBeDefined();
-+  expect(result.teapotVelocity!.x).toBeLessThan(0);
-+  expect(result.teapotVelocity!.y).toBeGreaterThan(0);
-+  expect(result.goalReached).toBe(true);
-+  await page.getByRole("button", { name: "Reset" }).click();
-+  await expect(page.locator("#tray-teapot-label")).toHaveText("Teapot (1)");
-+  await expect(page.locator("#tray-ramp-label")).toHaveText("Ramp (1)");
-+  expect(errors).toEqual([]);
 +});
 +
 +test("does not send the marble to the cup without a Teapot contact", async ({
@@ -1281,10 +1315,37 @@ index 0000000..75517d4
 +  ).toBe(false);
 +});
 diff --git a/index.html b/index.html
-index 5a34769..68776db 100644
+index 5a34769..48a0787 100644
 --- a/index.html
 +++ b/index.html
-@@ -148,28 +148,35 @@
+@@ -88,6 +88,26 @@
+           id="game-container"
+           aria-label="Physics puzzle play area"
+         ></section>
++        <nav
++          class="controls simulation-toolbar"
++          aria-label="Simulation controls"
++        >
++          <button id="edit-button" type="button">
++            <span class="control-icon" aria-hidden="true">✋</span> Edit
++          </button>
++          <button id="simulation-button" type="button">
++            <span class="control-icon" aria-hidden="true">▶</span> Run
++          </button>
++          <button id="rerun-button" type="button" disabled>
++            <span class="control-icon" aria-hidden="true">↻</span> Rerun
++          </button>
++          <button id="reset-button" type="button">
++            <span class="control-icon" aria-hidden="true">↺</span> Reset
++          </button>
++          <button id="next-puzzle-button" type="button" hidden>
++            Next Puzzle
++          </button>
++        </nav>
+         <aside
+           id="parts-palette"
+           class="parts-palette"
+@@ -148,28 +168,20 @@
                    >Mattress</span
                  >
                </button>
@@ -1300,21 +1361,6 @@ index 5a34769..68776db 100644
              </div>
            </div>
          </aside>
-+        <nav class="controls simulation-toolbar" aria-label="Simulation controls">
-+          <button id="edit-button" type="button">
-+            <span class="control-icon" aria-hidden="true">✋</span> Edit
-+          </button>
-+          <button id="simulation-button" type="button">
-+            <span class="control-icon" aria-hidden="true">▶</span> Run
-+          </button>
-+          <button id="rerun-button" type="button" disabled>
-+            <span class="control-icon" aria-hidden="true">↻</span> Rerun
-+          </button>
-+          <button id="reset-button" type="button">
-+            <span class="control-icon" aria-hidden="true">↺</span> Reset
-+          </button>
-+          <button id="next-puzzle-button" type="button" hidden>Next Puzzle</button>
-+        </nav>
        </section>
        <p id="edit-feedback" class="edit-feedback" aria-live="polite" hidden></p>
 -      <nav class="controls simulation-toolbar" aria-label="Simulation controls">
@@ -38271,7 +38317,7 @@ index cf1d792..7946713 100644
      floor,
      goal,
 diff --git a/src/main.ts b/src/main.ts
-index 3cb05bc..38b6683 100644
+index 3cb05bc..a5711d1 100644
 --- a/src/main.ts
 +++ b/src/main.ts
 @@ -35,6 +35,7 @@ import {
@@ -38282,7 +38328,23 @@ index 3cb05bc..38b6683 100644
  import { Controls, type PlayScreenView } from "./ui/Controls";
  
  function getLocalStorage(): StorageAdapter | undefined {
-@@ -117,6 +118,8 @@ function applyState(): void {
+@@ -61,6 +62,7 @@ declare global {
+   interface Window {
+     __contraptionLabTest?: {
+       getPrototypeScene: () => PrototypeScene | undefined;
++      getGameState: () => Readonly<GameState>;
+     };
+   }
+ }
+@@ -68,6 +70,7 @@ declare global {
+ if (import.meta.env.DEV) {
+   window.__contraptionLabTest = {
+     getPrototypeScene: () => scene,
++    getGameState: () => state,
+   };
+ }
+ 
+@@ -117,6 +120,8 @@ function applyState(): void {
  }
  
  function handleAction(action: GameAction): void {
@@ -38291,7 +38353,7 @@ index 3cb05bc..38b6683 100644
    if (typeof action === "object" && action.type === "spawn-tray-block") {
      const componentId = scene?.spawnTrayBlock(state.trayBlockCount);
      if (!componentId) return;
-@@ -132,6 +135,11 @@ function handleAction(action: GameAction): void {
+@@ -132,6 +137,11 @@ function handleAction(action: GameAction): void {
      if (!componentId) return;
      action = { ...action, componentId };
    }
@@ -38656,50 +38718,30 @@ index 5d453ec..d8d8bce 100644
      };
    }
 diff --git a/src/style.css b/src/style.css
-index a378cae..4b79631 100644
+index a378cae..ded0a14 100644
 --- a/src/style.css
 +++ b/src/style.css
-@@ -302,11 +302,25 @@ h1 {
- }
- 
- .play-area {
--  display: block;
-+  display: grid;
-+  grid-template-columns: minmax(0, 1fr) minmax(190px, 0.3fr);
-+  grid-template-rows: auto auto;
-+  gap: 12px;
-+}
-+
-+#game-container,
-+.simulation-toolbar {
-+  grid-column: 1;
-+}
-+
-+.simulation-toolbar {
-+  grid-row: 2;
- }
- 
- .parts-palette {
--  margin-top: 12px;
-+  grid-column: 2;
-+  grid-row: 1 / span 2;
-+  margin-top: 0;
-   padding: 10px 12px;
-   border: 2px solid #71827c;
-   border-radius: 8px;
-@@ -602,6 +616,12 @@ button:disabled {
+@@ -588,20 +588,3 @@ button:disabled {
+     margin-left: 0;
    }
- 
-   .parts-palette {
-+    grid-column: 1;
-+    grid-row: 2;
-     margin-top: 0;
-   }
-+
-+  .simulation-toolbar {
-+    grid-row: 3;
-+  }
  }
+-
+-@media (min-width: 1320px) {
+-  .play-area {
+-    display: grid;
+-    grid-template-columns: minmax(0, 1fr) 190px;
+-    align-items: start;
+-    gap: 12px;
+-  }
+-
+-  .play-area--palette-collapsed {
+-    grid-template-columns: minmax(0, 1fr);
+-  }
+-
+-  .parts-palette {
+-    margin-top: 0;
+-  }
+-}
 diff --git a/src/ui/Controls.ts b/src/ui/Controls.ts
 index cb565cc..aac8d06 100644
 --- a/src/ui/Controls.ts
