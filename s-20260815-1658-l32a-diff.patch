@@ -1,5 +1,5 @@
 diff --git a/docs/CODEX_PROMPTS.md b/docs/CODEX_PROMPTS.md
-index 84d7e0e..5c4f39a 100644
+index 84d7e0e..595e647 100644
 --- a/docs/CODEX_PROMPTS.md
 +++ b/docs/CODEX_PROMPTS.md
 @@ -4592,6 +4592,293 @@ Ensure response + diff reflect the FINAL working tree.
@@ -296,7 +296,7 @@ index 84d7e0e..5c4f39a 100644
  Start Phase 2 milestone #31 — Chapter 1 L2 “Boing”.
  
  Continue from the current Contraption Lab working tree.
-@@ -5482,3 +5769,875 @@ Use exactly:
+@@ -5482,3 +5769,935 @@ Use exactly:
  `~/code/prom-resp/push-response.sh s-20260815-0041-l31a`
  
  IMPORTANT: append THIS FULL ORIGINAL OPERATIONAL PROMPT VERBATIM to `docs/CODEX_PROMPTS.md`. Do not paraphrase, reconstruct, summarize, or omit any part of it.
@@ -1164,6 +1164,66 @@ index 84d7e0e..5c4f39a 100644
 +- staged file list;
 +- any unresolved issue;
 +- confirmation that excluded files remain unstaged.
++
++Handoff using exactly:
++/home/anatolschwartz/code/prom-resp/push-response.sh s-20260815-1658-l32a
++
++IMPORTANT: append THIS FULL ORIGINAL OPERATIONAL PROMPT VERBATIM to docs/CODEX_PROMPTS.md.
++Do not paraphrase, reconstruct, summarize, or omit any part of it.
++
++Then STOP.
++
++Finalize the already-reviewed Phase 2 #32 local checkpoint.
++
++Work ONLY in:
++/home/anatolschwartz/code/contraption-lab
++
++Verify:
++- current branch is `phase2-32-tea-time`
++- do NOT modify `/home/anatolschwartz/code/contraption-lab-main`
++
++Session token:
++s-20260815-1658-l32a
++
++The staged #32 checkpoint was already reviewed and approved.
++
++Before doing anything:
++1. verify there is currently a non-empty staged index;
++2. verify the staged files still match the approved #32 checkpoint set;
++3. verify unrelated/excluded files remain unstaged.
++
++If the staged index is empty or materially differs from the approved checkpoint, STOP and report the discrepancy. Do not reconstruct or restage it automatically.
++
++Keep excluded:
++- README.md
++- README.md.bak
++- docs/ROADMAP.md.bak
++- docs/reviews/
++- s-20260812-1003-c7d4-response.md
++
++Append THIS FULL ORIGINAL OPERATIONAL PROMPT VERBATIM to docs/CODEX_PROMPTS.md and stage only that required prompt-log update in addition to the already-approved staged checkpoint.
++
++Run:
++- git diff --cached --check
++- git diff --cached --name-status
++
++Then create ONE LOCAL commit:
++
++wip: checkpoint Tea Time #32 before held placement slice 3
++
++Do NOT push Contraption Lab.
++
++After commit:
++- report commit SHA;
++- run git status --short;
++- confirm excluded/unrelated files remain;
++- confirm the approved #32 staged changes are committed.
++
++Create/update:
++- s-20260815-1658-l32a-response.md
++- s-20260815-1658-l32a-diff.patch
++
++The diff artifact must contain the CHECKPOINT COMMIT diff itself, not an empty post-commit working-tree diff.
 +
 +Handoff using exactly:
 +/home/anatolschwartz/code/prom-resp/push-response.sh s-20260815-1658-l32a
