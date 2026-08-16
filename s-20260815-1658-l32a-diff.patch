@@ -1,23 +1,15 @@
-commit 65600f6bfb6dfe456ffce748a08e8c8aaaa3b778
-Author:     Anatol Schwarz <anatol2002@gmail.com>
-AuthorDate: Sun Aug 16 20:06:45 2026 +0300
-Commit:     Anatol Schwarz <anatol2002@gmail.com>
-CommitDate: Sun Aug 16 20:06:45 2026 +0300
-
-    wip: checkpoint held placement slice 4
-
 diff --git a/docs/CODEX_PROMPTS.md b/docs/CODEX_PROMPTS.md
-index c2cb09a..69e764f 100644
+index 69e764f..111f5c8 100644
 --- a/docs/CODEX_PROMPTS.md
 +++ b/docs/CODEX_PROMPTS.md
-@@ -6924,3 +6924,247 @@ IMPORTANT: append THIS FULL ORIGINAL OPERATIONAL PROMPT VERBATIM to docs/CODEX_P
+@@ -7168,3 +7168,116 @@ IMPORTANT: append THIS FULL ORIGINAL OPERATIONAL PROMPT VERBATIM to docs/CODEX_P
  Do not paraphrase, reconstruct, summarize, or omit any part of it.
  
  Then STOP.
 +
-+Continue Phase 2 #32 from Slice 3 checkpoint:
++Continue Phase 2 #32 from checkpoint:
 +
-+d77c55387bfada5a81d387cbe020e2999da7610b
++65600f6bfb6dfe456ffce748a08e8c8aaaa3b778
 +
 +Work ONLY in:
 +/home/anatolschwartz/code/contraption-lab
@@ -30,65 +22,74 @@ index c2cb09a..69e764f 100644
 +Session token:
 +s-20260815-1658-l32a
 +
-+Implement ONLY held-placement Slice 4:
++Fix ONLY the generic Reset stale-render lifecycle bug.
 +
-+VALID CLICK -> COMMIT/PLACE PART.
++Observed real behavior:
++- place a Ramp from inventory;
++- Reset;
++- inventory correctly restores the Ramp;
++- the old Ramp IMAGE remains visible on the canvas;
++- the stale visual no longer behaves as a real gameplay Ramp;
++- repeated placement can therefore produce duplicate-looking Ramp visuals.
 +
-+Required generic behavior:
++This must be fixed GENERICALLY for all applicable player-placeable parts/puzzles, not Tea Time- or Ramp-specific.
 +
-+1. While heldPlacement is active, clicking a VALID canvas position:
-+- commits that exact held transform;
-+- creates/registers the normal existing runtime/render part;
-+- creates the normal Matter body when that part is collidable;
-+- registers normal contact/collision behavior;
-+- decrements inventory exactly ONCE;
-+- clears heldPlacement and provisional visual;
-+- makes the committed part the normal selected component.
++Required invariant after Reset:
++- runtime part records reflect reset state;
++- Matter bodies reflect reset state;
++- contact registrations reflect reset state;
++- rendered/display objects reflect reset state;
++- inventory reflects reset state;
++- no stale display object survives after its runtime/body/state object has been removed.
 +
-+2. Invalid click:
-+- does NOT commit;
-+- does NOT decrement inventory;
-+- does NOT create runtime/Matter/contact objects;
-+- part remains held and continues following the pointer.
++Diagnose the existing reset path:
++resetLevel -> restoreLevelParts -> destroyParts
++and identify exactly where render-object cleanup diverges from runtime/body cleanup.
 +
-+3. Reuse existing committed-part creation/geometry paths.
-+Do NOT create parallel Ramp/Teapot-specific implementations.
-+Do NOT let old `spawn-tray-*` state mutation cause a second inventory decrement.
++Implement the smallest generic lifecycle fix.
 +
-+Apply generically to all applicable inventory-placeable parts.
++Requirements:
++- Reset destroys/removes every player-created runtime visual that should no longer exist;
++- corresponding Matter/contact/runtime entries are also removed exactly once;
++- inventory restores correctly;
++- no stale visual remains;
++- no duplicate destruction errors;
++- fixed/default level parts are restored normally;
++- existing placed-part behavior before Reset remains unchanged;
++- puzzle switching/reload may be touched ONLY if the same lifecycle helper must be corrected generically.
 +
-+Do NOT implement yet:
-+- Escape/right-click cancel;
++Do NOT fix in this run:
++- Ramp visual/Matter geometry alignment;
++- placed-part movement trap;
++- Teapot collision shape;
++- Cup goal/location;
 +- held Q/E rotation;
-+- broad Reset/puzzle-switch cleanup;
-+- Tea Time reference-route fixes;
-+- Parts layout changes;
-+- Teapot opacity;
-+- unrelated collision/reset fixes.
++- Escape/right-click cancel;
++- Tea Time reference-route physics;
++- unrelated layout changes.
 +
 +Automated verification:
-+- valid held Ramp click commits at held transform;
-+- inventory 1 -> 0 exactly once;
-+- heldPlacement clears;
-+- preview disappears;
-+- committed Ramp remains selected;
-+- runtime Ramp exists;
-+- Matter body exists;
-+- normal collision/contact registration exists where applicable;
-+- repeated click cannot double-decrement/create duplicate part;
-+- invalid click leaves part held and inventory unchanged.
 +
-+Real browser:
-+- Edit -> Parts -> Ramp;
-+- move held Ramp to a valid clear position;
-+- click;
-+- verify preview becomes committed Ramp at same position;
-+- inventory becomes 0;
-+- Ramp remains selected;
-+- verify normal runtime/Matter registration;
-+- also verify an invalid placement click remains held.
++Focused tests:
++- place a player Ramp;
++- verify runtime/render/Matter/contact object exists;
++- Reset;
++- verify that player Ramp runtime entry is gone;
++- verify display object is gone;
++- verify Matter body/contact registration is gone;
++- verify inventory restores exactly once;
++- repeat Reset and ensure no duplicate/stale cleanup issue.
 +
-+Use <=1px tolerance for DOM/canvas coordinate comparisons.
++Real browser regression:
++- Tea Time -> Edit -> place Ramp;
++- confirm exactly one committed Ramp;
++- click Reset;
++- confirm Ramp inventory returns to 1;
++- confirm old committed Ramp visual is gone;
++- place Ramp again;
++- confirm only one committed Ramp visual exists.
++
++Use bounded Playwright/browser timeouts and cleanly close browser/context/process handles.
 +
 +Run:
 +- focused relevant tests
@@ -103,153 +104,13 @@ index c2cb09a..69e764f 100644
 +- s-20260815-1658-l32a-response.md
 +- s-20260815-1658-l32a-diff.patch
 +
-+Response must separate:
++Response must clearly separate:
++- root cause
 +- implementation
 +- automated tests
 +- browser verification
 +- unresolved issues
-+- manual verification requirement
-+
-+Handoff using exactly:
-+/home/anatolschwartz/code/prom-resp/push-response.sh s-20260815-1658-l32a
-+
-+IMPORTANT: append THIS FULL ORIGINAL OPERATIONAL PROMPT VERBATIM to docs/CODEX_PROMPTS.md.
-+Do not paraphrase, reconstruct, summarize, or omit any part of it.
-+
-+Then STOP.
-+
-+Continue Phase 2 #32.
-+
-+Work ONLY in:
-+/home/anatolschwartz/code/contraption-lab
-+
-+Verify:
-+- branch = phase2-32-tea-time
-+- do NOT modify /home/anatolschwartz/code/contraption-lab-main
-+
-+Session token:
-+s-20260815-1658-l32a
-+
-+DIAGNOSE AND FIX ONLY the Slice 4 committed-transform mismatch.
-+
-+Observed browser test:
-+
-+After valid held Ramp commit:
-+- heldPlacement = null
-+- trayRampCount = 0
-+- runtimeRampCount = 1
-+- rampHasMatterBody = true
-+- contactRegistered = true
-+- selectedComponentId = held-ramp-1
-+- BUT rampMatchesTarget = false
-+
-+Manual browser testing confirms click-to-place works.
-+
-+Also observed visually:
-+- marble penetrates roughly halfway into Ramp;
-+- Ramp effective collision line appears near the visual middle rather than the visible upper surface.
-+
-+Do NOT weaken the existing test.
-+
-+First instrument/inspect the exact values for:
-+1. held Ramp transform immediately before commit;
-+2. requested commit transform;
-+3. committed runtime Ramp visual/container transform;
-+4. committed Matter body position/angle;
-+5. the geometry offsets used by createRamp / Ramp rendering.
-+
-+Determine whether:
-+- the test is comparing incompatible coordinate anchors; OR
-+- production creation changes/offsets the held transform.
-+
-+Required invariant:
-+held transform before commit ~= committed runtime placement anchor ~= Matter placement anchor,
-+subject only to intentional documented geometry-local offsets.
-+
-+If production is wrong, fix the smallest generic Ramp/runtime geometry issue causing the mismatch.
-+If the test anchor is wrong, correct only the test and explain why.
-+
-+Do NOT yet fix:
-+- Reset stale visuals;
-+- placed-part movement trap;
-+- Teapot geometry;
-+- Cup geometry/location;
-+- Slice 5 cancel/Q/E/lifecycle features;
-+- Tea Time reference route.
-+
-+Run:
-+- focused relevant unit/integration tests
-+- focused Playwright Slice 4 test
-+- npm run typecheck
-+- npm run lint
-+- git diff --check
-+
-+Do not commit or push Contraption Lab.
-+
-+Create/update:
-+- s-20260815-1658-l32a-response.md
-+- s-20260815-1658-l32a-diff.patch
-+
-+Response must report the exact pre-commit held transform, runtime visual transform, Matter transform, root cause, fix, and Playwright result.
-+
-+Handoff using exactly:
-+/home/anatolschwartz/code/prom-resp/push-response.sh s-20260815-1658-l32a
-+
-+IMPORTANT: append THIS FULL ORIGINAL OPERATIONAL PROMPT VERBATIM to docs/CODEX_PROMPTS.md.
-+Do not paraphrase, reconstruct, summarize, or omit any part.
-+
-+Then STOP.
-+
-+Finalize the reviewed Phase 2 #32 Slice 4 checkpoint.
-+
-+Work ONLY in:
-+/home/anatolschwartz/code/contraption-lab
-+
-+Verify:
-+- branch = phase2-32-tea-time
-+- checkpoint d77c55387bfada5a81d387cbe020e2999da7610b is an ancestor of HEAD
-+- do NOT modify /home/anatolschwartz/code/contraption-lab-main
-+
-+Session token:
-+s-20260815-1658-l32a
-+
-+Slice 4 and the committed-transform fix have been reviewed and verified:
-+- valid held placement commits correctly
-+- invalid placement remains held
-+- inventory decrements exactly once
-+- runtime/Matter/contact registration works
-+- held/runtime/visual/Matter transform alignment is fixed
-+- focused Playwright PASS
-+- unit/typecheck/lint/diff-check PASS
-+
-+Commit ONLY the current reviewed Slice 4 changes.
-+
-+Do NOT stage unrelated/pre-existing files.
-+
-+Before commit:
-+- append THIS FULL ORIGINAL OPERATIONAL PROMPT VERBATIM to docs/CODEX_PROMPTS.md
-+- stage the reviewed #32 changes plus that prompt-log update
-+- run git diff --cached --check
-+- run git diff --cached --name-status
-+- verify no unrelated files are staged
-+
-+Create ONE LOCAL commit:
-+
-+wip: checkpoint held placement slice 4
-+
-+Do NOT push Contraption Lab.
-+
-+After commit:
-+- report commit SHA
-+- report git status --short
-+- confirm unrelated files remain uncommitted
-+- confirm contraption-lab-main remains untouched
-+
-+Create/update:
-+- s-20260815-1658-l32a-response.md
-+- s-20260815-1658-l32a-diff.patch
-+
-+The diff artifact must contain the checkpoint commit diff itself.
++- manual verification requirement, if any
 +
 +Handoff using exactly:
 +/home/anatolschwartz/code/prom-resp/push-response.sh s-20260815-1658-l32a
@@ -259,242 +120,110 @@ index c2cb09a..69e764f 100644
 +
 +Then STOP.
 diff --git a/e2e/teaTime.e2e.ts b/e2e/teaTime.e2e.ts
-index 8415e2e..2aa0a34 100644
+index 2aa0a34..7fc12cd 100644
 --- a/e2e/teaTime.e2e.ts
 +++ b/e2e/teaTime.e2e.ts
-@@ -121,7 +121,7 @@ test("opens Parts below the controls and starts held Teapot placement", async ({
+@@ -121,10 +121,10 @@ test("opens Parts below the controls and starts held Teapot placement", async ({
      });
  });
  
--test("renders and moves a held Ramp preview without runtime registration", async ({
-+test("keeps an invalid held Ramp and commits a valid Ramp with normal registration", async ({
+-test("keeps an invalid held Ramp and commits a valid Ramp with normal registration", async ({
++test("cleans a committed Ramp from runtime and display state on Reset", async ({
    page,
  }) => {
-   test.setTimeout(45_000);
-@@ -182,7 +182,7 @@ test("renders and moves a held Ramp preview without runtime registration", async
-       trayRampCount: 1,
+-  test.setTimeout(45_000);
++  test.setTimeout(60_000);
+   await openTeaTime(page);
+   const parts = page.locator("#parts-palette");
+   if (!(await parts.isVisible()))
+@@ -399,6 +399,125 @@ test("keeps an invalid held Ramp and commits a valid Ramp with normal registrati
+       runtimeRampCount: 1,
+       trayRampCount: 0,
      });
- 
--  const target = { x: 540, y: 300 };
-+  const target = { x: 400, y: 180 };
-   const canvasCoordinateTolerance = 1;
-   await canvas.hover({
-     position: {
-@@ -192,34 +192,37 @@ test("renders and moves a held Ramp preview without runtime registration", async
-   });
-   await expect
-     .poll(() =>
--      page.evaluate((tolerance) => {
--        const state = window.__contraptionLabTest?.getGameState();
--        const heldPosition = state?.heldPlacement?.transform.position;
--        const scene =
--          window.__contraptionLabTest?.getPrototypeScene() as unknown as {
--            heldPlacementVisual?: { x: number; y: number };
--            children: { list: Array<{ name: string }> };
-+      page.evaluate(
-+        ({ target, tolerance }) => {
-+          const state = window.__contraptionLabTest?.getGameState();
-+          const heldPosition = state?.heldPlacement?.transform.position;
-+          const scene =
-+            window.__contraptionLabTest?.getPrototypeScene() as unknown as {
-+              heldPlacementVisual?: { x: number; y: number };
-+              children: { list: Array<{ name: string }> };
-+            };
-+          return {
-+            heldMatchesPreview:
-+              heldPosition !== undefined &&
-+              scene.heldPlacementVisual !== undefined &&
-+              Math.abs(heldPosition.x - scene.heldPlacementVisual.x) <= 0.01 &&
-+              Math.abs(heldPosition.y - scene.heldPlacementVisual.y) <= 0.01,
-+            heldWithinTargetTolerance:
-+              heldPosition !== undefined &&
-+              Math.abs(heldPosition.x - target.x) <= tolerance &&
-+              Math.abs(heldPosition.y - target.y) <= tolerance,
-+            previewCount: scene.children.list.filter((child) =>
-+              child.name.startsWith("held-placement:"),
-+            ).length,
-+            previewWithinTargetTolerance:
-+              scene.heldPlacementVisual !== undefined &&
-+              Math.abs(scene.heldPlacementVisual.x - target.x) <= tolerance &&
-+              Math.abs(scene.heldPlacementVisual.y - target.y) <= tolerance,
-+            trayRampCount: state?.trayRampCount,
-           };
--        return {
--          heldMatchesPreview:
--            heldPosition !== undefined &&
--            scene.heldPlacementVisual !== undefined &&
--            Math.abs(heldPosition.x - scene.heldPlacementVisual.x) <= 0.01 &&
--            Math.abs(heldPosition.y - scene.heldPlacementVisual.y) <= 0.01,
--          heldWithinTargetTolerance:
--            heldPosition !== undefined &&
--            Math.abs(heldPosition.x - 540) <= tolerance &&
--            Math.abs(heldPosition.y - 300) <= tolerance,
--          previewCount: scene.children.list.filter((child) =>
--            child.name.startsWith("held-placement:"),
--          ).length,
--          previewWithinTargetTolerance:
--            scene.heldPlacementVisual !== undefined &&
--            Math.abs(scene.heldPlacementVisual.x - 540) <= tolerance &&
--            Math.abs(scene.heldPlacementVisual.y - 300) <= tolerance,
--          trayRampCount: state?.trayRampCount,
--        };
--      }, canvasCoordinateTolerance),
-+        },
-+        { target, tolerance: canvasCoordinateTolerance },
-+      ),
-     )
-     .toEqual({
-       heldMatchesPreview: true,
-@@ -229,22 +232,27 @@ test("renders and moves a held Ramp preview without runtime registration", async
-       trayRampCount: 1,
-     });
- 
--  await page.evaluate(() =>
--    window.__contraptionLabTest?.dispatchAction({
--      type: "cancel-held-placement",
--    }),
--  );
-+  await canvas.click({
-+    position: {
-+      x: (target.x / 960) * canvasBox.width,
-+      y: (target.y / 540) * canvasBox.height,
-+    },
++
++  await page.evaluate(() => {
++    const scene =
++      window.__contraptionLabTest?.getPrototypeScene() as unknown as {
++        ramps: Map<string, { sprite?: unknown }>;
++      };
++    const sprite = scene.ramps.get("held-ramp-1")?.sprite;
++    if (!sprite) throw new Error("Committed Ramp sprite is unavailable.");
++    (
++      window as unknown as { resetStaleRampSprite?: unknown }
++    ).resetStaleRampSprite = sprite;
 +  });
-   await expect
-     .poll(() =>
-       page.evaluate(() => {
-         const state = window.__contraptionLabTest?.getGameState();
-         const scene =
-           window.__contraptionLabTest?.getPrototypeScene() as unknown as {
++
++  await page.getByRole("button", { name: "Reset" }).click();
++  await expect
++    .poll(() =>
++      page.evaluate(() => {
++        const state = window.__contraptionLabTest?.getGameState();
++        const scene =
++          window.__contraptionLabTest?.getPrototypeScene() as unknown as {
++            children: { list: unknown[] };
 +            contactObjects: Map<unknown, unknown>;
-             children: { list: Array<{ name: string }> };
 +            matter: { world: { engine: { world: { bodies: unknown[] } } } };
-             ramps: Map<string, unknown>;
-           };
-         return {
-           heldPlacement: state?.heldPlacement,
++            ramps: Map<string, unknown>;
++          };
++        const staleSprite = (
++          window as unknown as { resetStaleRampSprite?: unknown }
++        ).resetStaleRampSprite;
++        return {
 +          contactCount: scene.contactObjects.size,
 +          matterBodyCount: scene.matter.world.engine.world.bodies.length,
-           previewCount: scene.children.list.filter((child) =>
-             child.name.startsWith("held-placement:"),
-           ).length,
-@@ -253,11 +261,143 @@ test("renders and moves a held Ramp preview without runtime registration", async
-         };
-       }),
-     )
-+    .toMatchObject({
-+      heldPlacement: { part: "ramp" },
++          runtimeRampCount: scene.ramps.size,
++          staleSpriteInDisplayList: scene.children.list.includes(staleSprite),
++          trayRampCount: state?.trayRampCount,
++        };
++      }),
++    )
++    .toEqual({
 +      contactCount: before.contactCount,
 +      matterBodyCount: before.matterBodyCount,
-+      previewCount: 1,
 +      runtimeRampCount: 0,
++      staleSpriteInDisplayList: false,
 +      trayRampCount: 1,
 +    });
 +
-+  const validTarget = { x: 540, y: 300 };
++  await page.getByRole("button", { name: "Reset" }).click();
++  await expect
++    .poll(() =>
++      page.evaluate(() => {
++        const state = window.__contraptionLabTest?.getGameState();
++        const scene =
++          window.__contraptionLabTest?.getPrototypeScene() as unknown as {
++            children: { list: unknown[] };
++            contactObjects: Map<unknown, unknown>;
++            matter: { world: { engine: { world: { bodies: unknown[] } } } };
++            ramps: Map<string, unknown>;
++          };
++        const staleSprite = (
++          window as unknown as { resetStaleRampSprite?: unknown }
++        ).resetStaleRampSprite;
++        return {
++          contactCount: scene.contactObjects.size,
++          matterBodyCount: scene.matter.world.engine.world.bodies.length,
++          runtimeRampCount: scene.ramps.size,
++          staleSpriteInDisplayList: scene.children.list.includes(staleSprite),
++          trayRampCount: state?.trayRampCount,
++        };
++      }),
++    )
++    .toEqual({
++      contactCount: before.contactCount,
++      matterBodyCount: before.matterBodyCount,
++      runtimeRampCount: 0,
++      staleSpriteInDisplayList: false,
++      trayRampCount: 1,
++    });
++
++  await page.locator("#tray-ramp-button").click();
 +  await canvas.hover({
 +    position: {
 +      x: (validTarget.x / 960) * canvasBox.width,
 +      y: (validTarget.y / 540) * canvasBox.height,
 +    },
 +  });
-+  const heldBeforeCommit = await page.evaluate(() => {
-+    const heldPlacement =
-+      window.__contraptionLabTest?.getGameState().heldPlacement;
-+    if (!heldPlacement) throw new Error("Ramp was not held before commit.");
-+    return {
-+      position: { ...heldPlacement.transform.position },
-+      rotation: heldPlacement.transform.rotation,
-+    };
-+  });
-+  await canvas.click({
-+    position: {
-+      x: (validTarget.x / 960) * canvasBox.width,
-+      y: (validTarget.y / 540) * canvasBox.height,
-+    },
-+  });
-+  await expect
-+    .poll(() =>
-+      page.evaluate(
-+        ({ held, tolerance }) => {
-+          const state = window.__contraptionLabTest?.getGameState();
-+          const scene =
-+            window.__contraptionLabTest?.getPrototypeScene() as unknown as {
-+              contactObjects: Map<unknown, { id: string }>;
-+              children: { list: Array<{ name: string }> };
-+              matter: { world: { engine: { world: { bodies: unknown[] } } } };
-+              ramps: Map<
-+                string,
-+                {
-+                  shape: {
-+                    body?: {
-+                      angle: number;
-+                      position: { x: number; y: number };
-+                    };
-+                    rotation: number;
-+                    x: number;
-+                    y: number;
-+                  };
-+                  sprite?: { rotation: number; x: number; y: number };
-+                }
-+              >;
-+            };
-+          const ramp = scene.ramps.get("held-ramp-1");
-+          const body = ramp?.shape.body;
-+          return {
-+            contactRegistered: [...scene.contactObjects.values()].some(
-+              (contact) => contact.id === "held-ramp-1",
-+            ),
-+            heldPlacement: state?.heldPlacement,
-+            matterBodyCount: scene.matter.world.engine.world.bodies.length,
-+            previewCount: scene.children.list.filter((child) =>
-+              child.name.startsWith("held-placement:"),
-+            ).length,
-+            rampHasMatterBody: ramp?.shape.body !== undefined,
-+            matterMatchesHeld:
-+              body !== undefined &&
-+              Math.abs(body.position.x - held.position.x) <= tolerance &&
-+              Math.abs(body.position.y - held.position.y) <= tolerance &&
-+              Math.abs(body.angle - held.rotation) <= 0.01,
-+            rampMatchesTarget:
-+              ramp !== undefined &&
-+              Math.abs(ramp.shape.x - 540) <= tolerance &&
-+              Math.abs(ramp.shape.y - 300) <= tolerance,
-+            runtimeAnchorMatchesHeld:
-+              ramp !== undefined &&
-+              Math.abs(ramp.shape.x - held.position.x) <= tolerance &&
-+              Math.abs(ramp.shape.y - held.position.y) <= tolerance &&
-+              Math.abs(ramp.shape.rotation - held.rotation) <= 0.01,
-+            runtimeRampCount: scene.ramps.size,
-+            selectedComponentId: state?.selectedComponentId,
-+            trayRampCount: state?.trayRampCount,
-+            visualAnchorMatchesHeld:
-+              ramp?.sprite !== undefined &&
-+              Math.abs(ramp.sprite.x - held.position.x) <= tolerance &&
-+              Math.abs(ramp.sprite.y - held.position.y) <= tolerance &&
-+              Math.abs(ramp.sprite.rotation - held.rotation) <= 0.01,
-+          };
-+        },
-+        { held: heldBeforeCommit, tolerance: canvasCoordinateTolerance },
-+      ),
-+    )
-     .toEqual({
-+      contactRegistered: true,
-       heldPlacement: null,
-+      matterBodyCount: before.matterBodyCount + 1,
-       previewCount: 0,
--      runtimeRampCount: 0,
--      trayRampCount: 1,
-+      rampHasMatterBody: true,
-+      matterMatchesHeld: true,
-+      rampMatchesTarget: true,
-+      runtimeAnchorMatchesHeld: true,
-+      runtimeRampCount: 1,
-+      selectedComponentId: "held-ramp-1",
-+      trayRampCount: 0,
-+      visualAnchorMatchesHeld: true,
-+    });
-+
 +  await canvas.click({
 +    position: {
 +      x: (validTarget.x / 960) * canvasBox.width,
@@ -507,337 +236,67 @@ index 8415e2e..2aa0a34 100644
 +        const state = window.__contraptionLabTest?.getGameState();
 +        const scene =
 +          window.__contraptionLabTest?.getPrototypeScene() as unknown as {
-+            matter: { world: { engine: { world: { bodies: unknown[] } } } };
-+            ramps: Map<string, unknown>;
++            children: { list: unknown[] };
++            ramps: Map<string, { sprite?: unknown }>;
 +          };
++        const staleSprite = (
++          window as unknown as { resetStaleRampSprite?: unknown }
++        ).resetStaleRampSprite;
++        const ramp = scene.ramps.get("held-ramp-1");
 +        return {
-+          matterBodyCount: scene.matter.world.engine.world.bodies.length,
++          currentSpriteInDisplayList:
++            ramp?.sprite !== undefined &&
++            scene.children.list.includes(ramp.sprite),
 +          runtimeRampCount: scene.ramps.size,
++          staleSpriteInDisplayList: scene.children.list.includes(staleSprite),
 +          trayRampCount: state?.trayRampCount,
 +        };
 +      }),
 +    )
 +    .toEqual({
-+      matterBodyCount: before.matterBodyCount + 1,
++      currentSpriteInDisplayList: true,
 +      runtimeRampCount: 1,
++      staleSpriteInDisplayList: false,
 +      trayRampCount: 0,
-     });
++    });
  });
  
+ test("does not send the marble to the cup without a Teapot contact", async ({
 diff --git a/src/game/PrototypeScene.ts b/src/game/PrototypeScene.ts
-index 7bf26ff..5043898 100644
+index 5043898..7e09787 100644
 --- a/src/game/PrototypeScene.ts
 +++ b/src/game/PrototypeScene.ts
-@@ -300,6 +300,9 @@ export class PrototypeScene extends Phaser.Scene {
-     private readonly onHeldPlacementTransformChange: (
-       transform: RampTransform,
-     ) => void,
-+    private readonly onHeldPlacementCommit: (
-+      placement: HeldPlacement,
-+    ) => boolean,
-     private readonly onComponentRemove: (
-       componentId: string,
-       returnsTrayPart:
-@@ -351,10 +354,18 @@ export class PrototypeScene extends Phaser.Scene {
-         }
-       },
-     );
--    this.input.on(Phaser.Input.Events.POINTER_DOWN, () => {
--      if (!this.editInteractionEnabled || this.activeHeldPlacement) return;
--      this.onSelectionChange(null);
--    });
-+    this.input.on(
-+      Phaser.Input.Events.POINTER_DOWN,
-+      (pointer: Phaser.Input.Pointer) => {
-+        if (!this.editInteractionEnabled) return;
-+        if (this.activeHeldPlacement) {
-+          if (pointer.button === 0)
-+            this.onHeldPlacementCommit(this.activeHeldPlacement);
-+          return;
-+        }
-+        this.onSelectionChange(null);
-+      },
-+    );
-     this.input.on(
-       Phaser.Input.Events.POINTER_MOVE,
-       (pointer: Phaser.Input.Pointer) => {
-@@ -694,6 +705,163 @@ export class PrototypeScene extends Phaser.Scene {
-     };
+@@ -2033,12 +2033,8 @@ export class PrototypeScene extends Phaser.Scene {
    }
  
-+  commitHeldPlacement(placement: Readonly<HeldPlacement>): boolean {
-+    if (
-+      !this.editInteractionEnabled ||
-+      this.activeHeldPlacement?.id !== placement.id ||
-+      this.activeHeldPlacement.part !== placement.part
-+    ) {
-+      return false;
-+    }
-+    const { position, rotation } = placement.transform;
-+    let committed = false;
-+
-+    if (placement.part === "ramp") {
-+      const trayRamp = this.level.trayRamp;
-+      const definition: RampDefinition = {
-+        ...TRAY_RAMP_DEFINITION,
-+        ...(trayRamp
-+          ? {
-+              height: trayRamp.height,
-+              ownership: trayRamp.ownership,
-+              width: trayRamp.width,
-+            }
-+          : {}),
-+        id: placement.id,
-+        ...position,
-+        rotation,
-+      };
-+      if (this.isHeldRectanglePlacementValid(definition)) {
-+        this.createRamp(definition, true);
-+        committed = true;
-+      }
-+    } else if (placement.part === "block") {
-+      const definition: BlockDefinition = {
-+        ...TRAY_BLOCK_DEFINITION,
-+        id: placement.id,
-+        ...position,
-+        rotation,
-+      };
-+      if (this.isHeldRectanglePlacementValid(definition)) {
-+        this.createBlock(definition, true);
-+        committed = true;
-+      }
-+    } else if (placement.part === "mattress") {
-+      const tray = this.level.trayMattress;
-+      if (tray) {
-+        const definition: MattressDefinition = {
-+          ...tray,
-+          id: placement.id,
-+          ...position,
-+        };
-+        if (this.isHeldRectanglePlacementValid({ ...definition, rotation })) {
-+          this.createMattress(definition, true);
-+          committed = true;
-+        }
-+      }
-+    } else if (placement.part === "teapot") {
-+      const tray = this.level.trayTeapot;
-+      if (tray) {
-+        const definition: TeapotDefinition = {
-+          ...tray,
-+          id: placement.id,
-+          ...position,
-+        };
-+        if (this.isHeldRectanglePlacementValid({ ...definition, rotation })) {
-+          this.createTeapot(definition, true);
-+          committed = true;
-+        }
-+      }
-+    } else if (placement.part === "ball") {
-+      const source = this.level.balls.find(
-+        (ball) => ball.ownership === "player" && !this.balls.has(ball.id),
-+      );
-+      const definition = source
-+        ? {
-+            ...source,
-+            id: placement.id,
-+            ...position,
-+            initiallyPlaced: true,
-+          }
-+        : undefined;
-+      if (
-+        definition &&
-+        this.isHeldCirclePlacementValid(definition, placement.id)
-+      ) {
-+        this.createBall(definition, true);
-+        committed = true;
-+      }
-+    } else {
-+      const source = this.level.actors.find(
-+        (actor) => actor.ownership === "player" && !this.actors.has(actor.id),
-+      );
-+      const definition = source
-+        ? { ...source, id: placement.id, ...position, initiallyPlaced: true }
-+        : undefined;
-+      if (definition && this.isHeldActorPlacementValid(definition)) {
-+        this.createActor(definition, undefined, true);
-+        committed = true;
-+      }
-+    }
-+
-+    if (committed) this.onEditFeedback("");
-+    else
-+      this.onEditFeedback(
-+        "Placement rejected: keep parts in bounds and clear of other parts.",
-+      );
-+    return committed;
-+  }
-+
-+  private isHeldRectanglePlacementValid(
-+    definition: Readonly<
-+      Omit<RectanglePlacement, "rotation"> & { id: string; rotation?: number }
-+    >,
-+  ): boolean {
-+    const geometry = { ...definition, rotation: definition.rotation ?? 0 };
-+    const clamped = clampRampPosition(geometry, geometry);
-+    return (
-+      clamped.x === geometry.x &&
-+      clamped.y === geometry.y &&
-+      this.getCurrentBalls().every((ball) =>
-+        isRectanglePlacementValid(
-+          geometry,
-+          ball,
-+          this.getOtherPlacements(geometry.id),
-+        ),
-+      )
-+    );
-+  }
-+
-+  private isHeldCirclePlacementValid(
-+    definition: Readonly<BallDefinition>,
-+    id: string,
-+  ): boolean {
-+    const clamped = clampCirclePosition(definition, definition.radius);
-+    return (
-+      clamped.x === definition.x &&
-+      clamped.y === definition.y &&
-+      isCirclePlacementValid(
-+        definition,
-+        this.getOtherPlacements(id),
-+        this.getOtherBallPlacements(id),
-+      )
-+    );
-+  }
-+
-+  private isHeldActorPlacementValid(
-+    definition: Readonly<ActorDefinition>,
-+  ): boolean {
-+    const clamped = clampRampPosition(definition, {
-+      ...definition,
-+      rotation: 0,
-+    });
-+    return (
-+      clamped.x === definition.x &&
-+      clamped.y === definition.y &&
-+      this.isValidActorPlacement(definition.id, definition, definition)
-+    );
-+  }
-+
-   spawnTrayBall(
-     availableCount: number,
-   ): { id: string; transform: BallTransform } | null {
-@@ -1585,6 +1753,7 @@ export class PrototypeScene extends Phaser.Scene {
-     event: Phaser.Types.Input.EventData,
-   ): void {
-     event.stopPropagation();
-+    if (this.activeHeldPlacement) return;
-     if (!this.editInteractionEnabled) {
-       this.playStorybookPoke(componentType, componentId);
-       return;
-@@ -2098,11 +2267,13 @@ export class PrototypeScene extends Phaser.Scene {
-       { x, y },
-       { ...ramp.definition, rotation },
-     );
--    const snapped = snapRampPlacement(
--      position,
--      rotation,
--      this.level.rampSnapTargets ?? [],
--    );
-+    // State application must preserve the recorded placement anchor exactly.
-+    // Snapping is an editor interaction affordance, not a transform migration.
-+    // Otherwise applying state after a held placement can move a newly-created
-+    // ramp to a nearby snap target that the player did not select.
-+    const snapped = notify
-+      ? snapRampPlacement(position, rotation, this.level.rampSnapTargets ?? [])
-+      : { position, rotation };
-     const isSnapTarget = this.level.rampSnapTargets?.some(
-       (target) =>
-         target.x === snapped.position.x &&
-diff --git a/src/main.ts b/src/main.ts
-index 7b3880c..303423f 100644
---- a/src/main.ts
-+++ b/src/main.ts
-@@ -259,6 +259,23 @@ function createGame(): void {
-       applyState();
-     },
-     (transform) => handleAction({ type: "update-held-placement", transform }),
-+    (placement) => {
-+      if (
-+        state.heldPlacement?.id !== placement.id ||
-+        state.heldPlacement.part !== placement.part
-+      ) {
-+        return false;
-+      }
-+      const committedState = transitionGameState(state, {
-+        type: "commit-held-placement",
-+      });
-+      if (committedState === state || !scene?.commitHeldPlacement(placement)) {
-+        return false;
-+      }
-+      replaceGameState(committedState);
-+      applyState();
-+      return true;
-+    },
-     (componentId, returnsTrayPart) =>
-       handleAction({
-         type: "remove-component",
-diff --git a/tests/mainRoutingIntegration.test.ts b/tests/mainRoutingIntegration.test.ts
-index 9bb0569..8570ebf 100644
---- a/tests/mainRoutingIntegration.test.ts
-+++ b/tests/mainRoutingIntegration.test.ts
-@@ -7,8 +7,16 @@ const mainTest = vi.hoisted(() => ({
-     setEditFeedback: vi.fn(),
-   },
-   onAction: undefined as ((action: unknown) => void) | undefined,
-+  onHeldPlacementCommit: undefined as
-+    | ((placement: {
-+        id: string;
-+        part: string;
-+        transform: { position: { x: number; y: number }; rotation: number };
-+      }) => boolean)
-+    | undefined,
-   scene: {
-     captureRunLayout: vi.fn(),
-+    commitHeldPlacement: vi.fn(() => true),
-     rerunFromSnapshot: vi.fn(),
-     resetLevel: vi.fn(),
-     setBlockTransforms: vi.fn(),
-@@ -35,7 +43,9 @@ vi.mock("phaser", () => ({
- 
- vi.mock("../src/game/PrototypeScene", () => ({
-   PrototypeScene: class {
--    constructor() {
-+    constructor(...args: unknown[]) {
-+      mainTest.onHeldPlacementCommit =
-+        args[8] as typeof mainTest.onHeldPlacementCommit;
-       return mainTest.scene;
+   private destroyParts(): void {
+-    for (const ramp of this.ramps.values()) {
+-      this.unregisterContactObject(ramp.shape);
+-      ramp.shape.destroy();
+-      ramp.highlight.destroy();
+-      ramp.shadow.destroy();
+-      ramp.selectionText.destroy();
++    for (const ramp of [...this.ramps.values()]) {
++      this.destroyRamp(ramp.definition.id);
      }
-   },
-@@ -111,5 +121,28 @@ describe("main.ts held-placement routing", () => {
-     expect(mainTest.scene.spawnTrayMattress).not.toHaveBeenCalled();
-     expect(mainTest.scene.spawnTrayRamp).not.toHaveBeenCalled();
-     expect(mainTest.scene.spawnTrayTeapot).not.toHaveBeenCalled();
+     for (const block of this.blocks.values()) {
+       this.unregisterContactObject(block.shape);
+@@ -2061,7 +2057,6 @@ export class PrototypeScene extends Phaser.Scene {
+       teapot.selectionText.destroy();
+       teapot.sprite?.destroy();
+     }
+-    this.ramps.clear();
+     this.blocks.clear();
+     this.mattresses.clear();
+     this.teapots.clear();
+@@ -2195,6 +2190,10 @@ export class PrototypeScene extends Phaser.Scene {
+   }
+ 
+   private destroyRampFromContact(componentId: string): void {
++    this.destroyRamp(componentId);
++  }
 +
-+    const placement = {
-+      part: "ramp",
-+      id: "held-ramp-main-test",
-+      transform: { position: { x: 540, y: 300 }, rotation: 0 },
-+    };
-+    mainTest.scene.commitHeldPlacement.mockReturnValueOnce(false);
-+    expect(mainTest.onHeldPlacementCommit?.(placement)).toBe(false);
-+    const invalidState = mainTest.controls.render.mock.calls.at(-1)?.[0];
-+    expect(invalidState).toMatchObject({
-+      heldPlacement: { id: "held-ramp-main-test" },
-+      trayRampCount: 4,
-+    });
-+    expect(mainTest.onHeldPlacementCommit?.(placement)).toBe(true);
-+    const committedState = mainTest.controls.render.mock.calls.at(-1)?.[0];
-+    expect(mainTest.scene.commitHeldPlacement).toHaveBeenCalledWith(placement);
-+    expect(committedState).toMatchObject({
-+      heldPlacement: null,
-+      selectedComponentId: "held-ramp-main-test",
-+      trayRampCount: 3,
-+    });
-+    expect(mainTest.onHeldPlacementCommit?.(placement)).toBe(false);
-+    expect(mainTest.scene.commitHeldPlacement).toHaveBeenCalledTimes(2);
-   });
- });
++  private destroyRamp(componentId: string): void {
+     const ramp = this.ramps.get(componentId);
+     if (!ramp) return;
+     this.unregisterContactObject(ramp.shape);
