@@ -1,18 +1,1361 @@
-diff --git a/src/levels/teaTime.json b/src/levels/teaTime.json
---- a/src/levels/teaTime.json
-+++ b/src/levels/teaTime.json
-@@
--      "x": 250,
--      "y": 220,
-+      "x": 400,
-+      "y": 180,
-@@
--      "x": 380,
--      "y": 280,
-+      "x": 483,
-+      "y": 378,
-       "width": 350,
--      "height": 30,
--      "rotation": 0.17,
-+      "height": 36,
-+      "rotation": 0.01,
+diff --git a/docs/CODEX_PROMPTS.md b/docs/CODEX_PROMPTS.md
+index 84d7e0e..e2c8d8a 100644
+--- a/docs/CODEX_PROMPTS.md
++++ b/docs/CODEX_PROMPTS.md
+@@ -4592,6 +4592,293 @@ Ensure response + diff reflect the FINAL working tree.
+ 
+ Then STOP.
+ 
++Continue Phase 2 #32 from the CURRENT working tree.
++
++Session token:
++s-20260815-1658-l32a
++
++DO NOT FIX ANYTHING.
++
++Manual browser testing after the previous correction still shows the same defect:
++
++When Run starts in Tea Time, the VISIBLE marble does NOT fall downward as expected.
++
++This contradicts the previous diagnostic trace, which reported the Matter body falling vertically for ticks 1–5.
++
++Your task is ONLY to reproduce and explain this contradiction in the actual browser UI.
++
++Use the real Tea Time browser scene and inspect BOTH:
++
++1. the Matter body's position/velocity;
++2. the rendered marble sprite/display object's position.
++
++Immediately after Run, record several frames/ticks with:
++
++- Matter body x/y
++- Matter body vx/vy
++- rendered marble x/y
++- whether sprite and body remain aligned
++- first collision/contact
++- any code that overwrites or resynchronizes the rendered marble position
++
++Also verify that you are testing the same built-in Tea Time level and same runtime path the user sees at:
++
++http://localhost:5173/
++
++Do not infer success from the headless simulator.
++
++The required output is a clear answer to:
++
++Why does the visible browser marble fail to fall even though the previous Matter trace said the body falls?
++
++If the visible marble actually does fall in your reproduction, provide concrete browser evidence showing its rendered y-position changing downward over time.
++
++Do not modify gameplay code, geometry, tests, or reference solutions.
++
++Do not commit or push Contraption Lab.
++
++Update:
++- s-20260815-1658-l32a-response.md
++- s-20260815-1658-l32a-diff.patch
++
++Handoff using exactly:
++
++~/code/prom-resp/push-response.sh s-20260815-1658-l32a
++
++IMPORTANT: append THIS FULL ORIGINAL OPERATIONAL PROMPT VERBATIM to:
++
++docs/CODEX_PROMPTS.md
++
++Do not paraphrase, reconstruct, summarize, or omit any part of it.
++
++Then STOP.
++
++# Codex correction prompt — #32 initial marble fall
++
++Continue Phase 2 #32 from the CURRENT working tree.
++
++Session token:
++`s-20260815-1658-l32a`
++
++The previous diagnostic successfully reproduced the defect:
++
++* marble starts at `(250, 235)` with zero velocity;
++* it initially intersects `tabletop-left-geometry`;
++* Matter resolves that penetration and gives it unintended rightward motion;
++* therefore the marble moves right instead of initially falling under gravity.
++
++FIX THIS DEFECT ONLY.
++
++Required behavior:
++
++* At Run start, the marble must NOT overlap/intersect any tabletop or other physics body.
++* Initial marble velocity remains zero.
++* The marble must initially fall under gravity.
++* It must not acquire rightward motion before a legitimate physical contact causes it.
++
++Make the smallest geometry/initial-position correction necessary.
++
++Do NOT:
++
++* modify the Teapot redirect/contact behavior;
++* modify cup behavior;
++* redesign L3;
++* add an L3-specific gameplay branch;
++* mask the issue with an artificial velocity/force.
++
++Verify in the actual Phaser/Matter browser runtime with the same kind of trace used for diagnosis.
++
++Report:
++
++* initial position/velocity;
++* first several relevant position/velocity samples;
++* first physical contact;
++* evidence that the marble initially falls rather than moves right.
++
++Update affected reference-solution geometry/tests only if strictly required by this correction.
++
++Run only the targeted checks necessary for this fix plus:
++
++* focused `e2e/teaTime.e2e.ts` as relevant
++* `npm run typecheck`
++* `npm run lint`
++* `git diff --check`
++
++Do not run the full unit suite for this isolated correction unless a broader regression requires it.
++
++Do not commit or push Contraption Lab.
++
++Preserve unrelated/owner work.
++
++Update:
++
++* `s-20260815-1658-l32a-response.md`
++* `s-20260815-1658-l32a-diff.patch`
++
++Handoff using exactly:
++
++`~/code/prom-resp/push-response.sh s-20260815-1658-l32a`
++
++IMPORTANT: append THIS FULL ORIGINAL OPERATIONAL PROMPT VERBATIM to:
++
++`docs/CODEX_PROMPTS.md`
++
++Do not paraphrase, reconstruct, summarize, or omit any part of it.
++
++Then STOP.
++
++# Codex diagnostic prompt — #32 marble moves right
++
++Continue Phase 2 #32 from the CURRENT working tree.
++
++Session token:
++`s-20260815-1658-l32a`
++
++DO NOT FIX ANYTHING.
++
++We are isolating one observed browser behavior only:
++
++In Tea Time, when Run starts, the marble should initially fall under gravity.
++
++Instead, manual testing shows the marble moving to the RIGHT toward the cup.
++
++Your task is ONLY to reproduce, identify, and verify whether this behavior actually occurs in the Phaser/Matter browser runtime.
++
++Do not modify:
++
++* gameplay code
++* level geometry
++* physics behavior
++* tests
++* reference solutions
++
++Do not attempt a correction.
++
++Use browser/runtime diagnostics to observe the marble immediately after Run.
++
++Report concrete evidence, including:
++
++* marble starting position
++* marble starting velocity
++* position/velocity over the first relevant ticks/frames
++* whether X increases before any Teapot/contact redirect
++* whether the marble is falling primarily under gravity or receiving horizontal motion
++* the source of any initial/rightward velocity if you can identify it by inspection
++
++The goal is simply to answer:
++
++**Can you reproduce and verify that the Tea Time marble moves right when it should initially fall?**
++
++If yes, state clearly that the defect is reproduced and show the evidence.
++
++If no, state clearly that you could not reproduce it and report exactly what you observed.
++
++Do not fix anything after identifying the cause.
++
++Do not commit or push Contraption Lab.
++
++Update:
++
++* `s-20260815-1658-l32a-response.md`
++* `s-20260815-1658-l32a-diff.patch`
++
++Handoff using exactly:
++
++`~/code/prom-resp/push-response.sh s-20260815-1658-l32a`
++
++IMPORTANT: append THIS FULL ORIGINAL OPERATIONAL PROMPT VERBATIM to:
++
++`docs/CODEX_PROMPTS.md`
++
++Do not paraphrase, reconstruct, summarize, or omit any part of it.
++
++Then STOP.
++
++# Codex correction prompt — #32 browser physics failure
++
++Continue Phase 2 milestone #32 from the CURRENT working tree.
++
++Session token:
++`s-20260815-1658-l32a`
++
++Manual browser testing still FAILS.
++
++Observed behavior:
++
++1. The marble should fall/roll according to gravity and level geometry, but instead it moves horizontally toward the cup by itself.
++
++2. When the Teapot is placed directly in the marble's path, the marble passes through it instead of triggering the Teapot redirect.
++
++This means the actual Phaser/Matter runtime behavior does not match the intended L3 mechanics and may not match the headless behavior.
++
++Diagnose and fix the ACTUAL browser physics/contact path.
++
++Check specifically:
++
++* marble initial velocity / forces / body setup;
++* whether any unintended horizontal velocity or redirect is applied before Teapot contact;
++* Teapot Matter body creation;
++* Teapot sensor/collision geometry;
++* collision categories/masks if relevant;
++* Teapot contact tags/metadata;
++* collision-start/contact dispatch;
++* declarative redirect-rule matching;
++* browser execution of the same redirect semantics used by headless simulation.
++
++Do NOT hide the problem by changing the E2E path, moving the cup, or adding an L3-specific gameplay branch.
++
++Required behavior:
++
++1. Without a Teapot intercepting its path, the marble must NOT magically travel to/solve the cup.
++
++2. With a Teapot correctly placed in the marble path:
++
++   * a real Matter contact must occur;
++   * the generic Teapot redirect rule must execute;
++   * the marble must exit in the authored spout direction;
++   * the redirected marble must reach the under-table cup.
++
++3. Browser and headless behavior must remain deterministic and semantically equivalent.
++
++Add/adjust focused tests so they prove those behaviors through the real runtime path.
++
++Run:
++
++* targeted affected Vitest
++* focused `e2e/teaTime.e2e.ts`
++* `npm run typecheck`
++* `npm run lint`
++* `npm test`
++* `npm run build`
++* `git diff --check`
++
++Do not run full Playwright unless a broader integration issue requires it.
++
++Do not reopen #30/#31.
++
++Preserve unrelated/owner work.
++
++Do not commit or push Contraption Lab.
++
++Update:
++
++* `s-20260815-1658-l32a-response.md`
++* `s-20260815-1658-l32a-diff.patch`
++
++Handoff using exactly:
++
++`~/code/prom-resp/push-response.sh s-20260815-1658-l32a`
++
++Ensure response + diff represent the FINAL working tree.
++
++IMPORTANT: append THIS FULL ORIGINAL OPERATIONAL PROMPT VERBATIM to:
++
++`docs/CODEX_PROMPTS.md`
++
++Do not paraphrase, reconstruct, summarize, or omit any part of it.
++
++Then STOP.
++
+ Start Phase 2 milestone #31 — Chapter 1 L2 “Boing”.
+ 
+ Continue from the current Contraption Lab working tree.
+@@ -5482,3 +5769,563 @@ Use exactly:
+ `~/code/prom-resp/push-response.sh s-20260815-0041-l31a`
+ 
+ IMPORTANT: append THIS FULL ORIGINAL OPERATIONAL PROMPT VERBATIM to `docs/CODEX_PROMPTS.md`. Do not paraphrase, reconstruct, summarize, or omit any part of it.
++
++# Codex prompt — Phase 2 #32 L3 “Tea Time”
++
++Start Phase 2 milestone #32 — Chapter 1 L3 “Tea Time”.
++
++Repository:
++`~/code/contraption-lab`
++
++Current accepted/pushed baseline:
++`2ec980ac7e38ad13283d92748999573c8a07527a`
++
++Session token:
++`s-20260815-1658-l32a`
++
++Do not reopen or polish #30/#31.
++
++Read and follow:
++
++* `AGENTS.md`
++* `docs/PHASE2_RECONCILIATION.md`
++* `docs/PROJECT_STATE.md`
++* `docs/ROADMAP.md`
++* `docs/design/phase2/sunny-attic-design-v0.1.md`
++* `docs/design/phase2/sunny-attic-art-bible-v0.4.md`
++
++Implement L3 “Tea Time” according to the approved card:
++
++* tea-party corner / doll table setting
++* cup under the table
++* Teapot is the new part
++* inventory: Teapot + one Plank
++* marble travels along the tabletop
++* intended route: Plank guides marble into Teapot lid → marble exits the spout down-left → reaches cup
++* distinct STAR route: solve with **no Plank**
++
++Architecture requirements:
++
++1. Implement Teapot redirection as a small reusable deterministic mechanic.
++
++   * no L3/level-id gameplay branch
++   * explicit gameplay geometry/direction
++   * sprite dimensions must not define Matter geometry
++   * browser and headless simulation must use equivalent semantics
++
++2. Preserve fixed-step determinism and existing levels.
++
++3. Reset/Rerun must correctly restore Teapot and Plank state.
++
++4. Encode and headlessly verify TWO named reference solutions:
++
++   * normal Plank route
++   * materially different no-Plank star route
++
++5. Use the existing Storybook asset pipeline.
++
++   * approved originals untouched
++   * runtime part/fx transparent
++   * environment opaque
++
++6. Extend schema/referenceSolutions only as necessary.
++
++Add focused tests for:
++
++* generic Teapot redirection
++* any schema/validation changes
++* deterministic normal reference route
++* deterministic no-Plank reference route
++* inventory + Reset/Rerun
++* L3 catalog/progression
++* focused browser placement/solve path
++
++During implementation run targeted tests.
++
++Before handoff run:
++
++* `npm run storybook-assets:check`
++* `npm run typecheck`
++* `npm run lint`
++* `npm test`
++* focused L3 Playwright
++* `npm run build`
++* `git diff --check`
++
++Do not run full Playwright unless a broad integration issue requires it.
++
++Do not commit or push Contraption Lab.
++
++Preserve unrelated/untracked work and owner edits, including `docs/ROADMAP.md`, unless #32 specifically requires an intentional change.
++
++Create/update:
++
++* `s-20260815-1658-l32a-response.md`
++* `s-20260815-1658-l32a-diff.patch`
++
++Handoff using exactly:
++
++`~/code/prom-resp/push-response.sh s-20260815-1658-l32a`
++
++Ensure both handoff artifacts represent the FINAL working tree.
++
++IMPORTANT: append THIS FULL ORIGINAL OPERATIONAL PROMPT VERBATIM to:
++
++`docs/CODEX_PROMPTS.md`
++
++Do not paraphrase, reconstruct, summarize, or omit any part of it.
++
++Then STOP.
++
++# Codex correction prompt — Phase 2 #32 L3 “Tea Time”
++
++Continue Phase 2 milestone #32 from the CURRENT working tree.
++
++Session token:
++`s-20260815-1658-l32a`
++
++Manual visual testing found a real L3 layout defect.
++
++Observed in browser:
++
++* the teacup is beside/left of the table instead of UNDER the table;
++* the marble can move toward the cup without requiring the intended Teapot redirection path;
++* the current scene therefore does not enforce the approved L3 puzzle structure.
++
++Fix #32 without redesigning the Teapot mechanic.
++
++Required correction:
++
++1. Make the visible/runtime L3 layout match the approved card:
++
++   * doll table remains central;
++   * teacup is under the table;
++   * marble path is along/above the tabletop;
++   * cup is not directly reachable from the marble's normal path;
++   * intended route requires:
++     Plank -> Teapot lid -> Teapot redirect -> cup under table.
++
++2. Preserve the existing generic deterministic Teapot redirect architecture if it is correct.
++
++   * no level-id gameplay branch;
++   * browser/headless semantics remain equivalent;
++   * Storybook sprite dimensions must not define Matter geometry.
++
++3. Recalculate/update L3 level geometry and reference solutions as necessary.
++
++4. BOTH named reference solutions must still solve deterministically:
++
++   * normal Plank route;
++   * distinct no-Plank star route.
++     The no-Plank star route must still use the Teapot and must remain materially different from the normal route.
++
++5. Update focused tests only as required by the corrected geometry.
++
++6. Focused browser test must prove the actual intended path:
++
++   * L3 selected;
++   * cup is under the table;
++   * Plank + Teapot placement;
++   * Run;
++   * marble enters Teapot;
++   * redirect sends it toward the under-table cup;
++   * success;
++   * Rerun/Reset remain correct.
++
++Run:
++
++* targeted affected Vitest
++* `npm run typecheck`
++* `npm run lint`
++* `npm test`
++* focused `e2e/teaTime.e2e.ts`
++* `npm run build`
++* `git diff --check`
++
++Do not run full Playwright unless required by a broader regression.
++
++Do not reopen or modify #30/#31.
++
++Preserve unrelated/owner work.
++
++Do not commit or push Contraption Lab.
++
++Update:
++
++* `s-20260815-1658-l32a-response.md`
++* `s-20260815-1658-l32a-diff.patch`
++
++Handoff using exactly:
++
++`~/code/prom-resp/push-response.sh s-20260815-1658-l32a`
++
++Ensure response + diff represent the FINAL working tree.
++
++IMPORTANT: append THIS FULL ORIGINAL OPERATIONAL PROMPT VERBATIM to:
++
++`docs/CODEX_PROMPTS.md`
++
++Do not paraphrase, reconstruct, summarize, or omit any part of it.
++
++Then STOP.
++
++# Codex diagnostic prompt — #32 tabletop physics vs visible art
++
++Continue Phase 2 #32 from the CURRENT working tree.
++
++Session token:
++s-20260815-1658-l32a
++
++DO NOT FIX ANYTHING.
++
++Manual inspection of the actual Tea Time browser scene shows:
++
++- the marble is visibly far LEFT of the table;
++- it is not visually above the tabletop;
++- nevertheless previous diagnostics report its first collision as:
++  `block:tabletop-left-geometry ↔ ball:tea-marble`
++
++This strongly suggests the Matter tabletop collision body extends into empty visible space to the left of the rendered table.
++
++Diagnose ONLY this visible-art / physics-geometry mismatch.
++
++In the actual Tea Time browser scene, report:
++
++1. Visible table bounds in canvas coordinates:
++   - left
++   - right
++   - top
++   - bottom
++
++2. `tabletop-left-geometry` Matter body:
++   - center x/y
++   - width/height
++   - rotation
++   - calculated world-space bounds/corners
++
++3. Marble:
++   - center x/y
++   - radius
++
++4. Determine whether the marble is geometrically above/intersecting the Matter tabletop while visually being left of the rendered tabletop.
++
++5. Explain why the Matter body occupies that visible empty region, if confirmed.
++
++Do not modify:
++- level geometry
++- sprite placement
++- physics
++- tests
++- reference solutions
++
++Do not fix anything.
++
++Do not commit or push Contraption Lab.
++
++Update:
++- s-20260815-1658-l32a-response.md
++- s-20260815-1658-l32a-diff.patch
++
++Handoff using exactly:
++
++~/code/prom-resp/push-response.sh s-20260815-1658-l32a
++
++IMPORTANT: append THIS FULL ORIGINAL OPERATIONAL PROMPT VERBATIM to:
++
++docs/CODEX_PROMPTS.md
++
++Do not paraphrase, reconstruct, summarize, or omit any part of it.
++
++Then STOP.
++
++# Codex correction prompt — #32 align tabletop physics to visible table
++
++Continue Phase 2 #32 from the CURRENT working tree.
++
++Session token:
++s-20260815-1658-l32a
++
++The previous diagnostic confirmed the defect:
++
++- visible table left edge is approximately x=308;
++- `tabletop-left-geometry` extends left to approximately x=205;
++- its collision surface also sits far above the visible tabletop;
++- the marble therefore collides with invisible geometry while visibly far left of the table.
++
++FIX THIS DEFECT ONLY.
++
++Required correction:
++
++1. Re-author the Tea Time tabletop Matter geometry so it matches the ACTUAL visible tabletop in `corner_L3_v1.png`.
++
++2. Measure the visible tabletop surface in 960×540 canvas coordinates.
++   Do not guess from the existing incorrect geometry.
++
++3. The corrected collision geometry must:
++   - cover the visible tabletop where physical support is expected;
++   - not extend materially into empty space left of the rendered table;
++   - not sit materially above the visible tabletop;
++   - preserve the visible tabletop angle/shape closely enough that marble motion visually matches the artwork.
++
++4. Keep the marble starting position unchanged unless the corrected geometry itself proves that position is invalid.
++
++5. Do NOT:
++   - change Teapot redirect/contact behavior;
++   - change cup behavior;
++   - add artificial velocity/forces;
++   - add an L3-specific gameplay branch;
++   - modify #30/#31;
++   - redesign the level.
++
++6. Verify in the ACTUAL Phaser/Matter browser runtime:
++
++   Before reaching the visible table:
++   - marble falls freely under gravity;
++   - no tabletop collision occurs;
++   - vx remains zero except for legitimate physical effects.
++
++   At the visible tabletop:
++   - first tabletop collision occurs at a visually corresponding location;
++   - marble/body/sprite remain aligned;
++   - subsequent roll/contact visually follows the rendered table.
++
++7. Report concrete before/after geometry:
++   - visible tabletop bounds/surface coordinates;
++   - corrected Matter body coordinates/dimensions/rotation or vertices;
++   - marble position at first tabletop contact.
++
++8. Update L3 reference-solution geometry/tests only where strictly necessary because of the corrected tabletop geometry.
++
++Run:
++- targeted Tea Time Vitest
++- focused browser verification for the tabletop/fall behavior
++- `npm run typecheck`
++- `npm run lint`
++- `git diff --check`
++
++Do not run the full Playwright suite unless required by a broader regression.
++
++Do not commit or push Contraption Lab.
++
++Preserve unrelated/owner work.
++
++Update:
++- s-20260815-1658-l32a-response.md
++- s-20260815-1658-l32a-diff.patch
++
++Handoff using exactly:
++
++~/code/prom-resp/push-response.sh s-20260815-1658-l32a
++
++Ensure response + diff represent the FINAL working tree.
++
++IMPORTANT: append THIS FULL ORIGINAL OPERATIONAL PROMPT VERBATIM to:
++
++docs/CODEX_PROMPTS.md
++
++Do not paraphrase, reconstruct, summarize, or omit any part of it.
++
++Then STOP.
++
++# Codex diagnostic — audit #32 prompt logging
++
++Audit `docs/CODEX_PROMPTS.md` for Phase 2 milestone #32.
++
++This is primarily a READ-ONLY diagnostic.
++
++Goal:
++Determine whether the operational prompts used during #32 were actually appended to `docs/CODEX_PROMPTS.md`.
++
++Inspect the CURRENT LOCAL WORKING TREE, not only committed `main`.
++
++Search `docs/CODEX_PROMPTS.md` for all #32 / Tea Time prompts, including prompts identifiable by these topics/phrases:
++
++- initial Phase 2 #32 / Tea Time implementation
++- Teapot redirect/contact corrections
++- browser Matter `collisionstart` handling / generic Ball–Teapot contact
++- marble unexpectedly moving right
++- fixing only the initial marble fall
++- Matter body vs rendered sprite alignment diagnosis
++- invisible tabletop geometry diagnosis
++- `tabletop-left-geometry`
++- latest correction:
++  `# Codex correction prompt — #32 align tabletop physics to visible table`
++
++For each expected #32 prompt, report:
++
++1. PRESENT or MISSING
++2. exact heading / first distinctive line if present
++3. line number or approximate location in `docs/CODEX_PROMPTS.md`
++4. whether it is marked VERBATIM, RECONSTRUCTED, or otherwise
++5. whether the full prompt appears present or only a partial/reference entry
++
++Also report:
++
++- all #32-related prompt blocks actually found, in chronological/file order;
++- any duplicate #32 prompts;
++- whether `docs/CODEX_PROMPTS.md` currently has uncommitted changes;
++- `git diff -- docs/CODEX_PROMPTS.md`;
++- `git status --short docs/CODEX_PROMPTS.md`.
++
++Do NOT:
++- reconstruct missing prompts;
++- add missing historical prompts;
++- modify game code;
++- modify any existing `docs/CODEX_PROMPTS.md` content except for the mandatory append described below;
++- commit or push Contraption Lab.
++
++IMPORTANT:
++The only permitted working-tree change is appending THIS FULL ORIGINAL OPERATIONAL PROMPT VERBATIM to:
++
++docs/CODEX_PROMPTS.md
++
++Do not paraphrase, reconstruct, summarize, or omit any part of it.
++
++After appending this audit prompt, distinguish clearly between:
++- pre-existing #32 prompt-log contents;
++- this newly appended audit prompt.
++
++Create:
++
++s-20260816-0740-l32audit-response.md
++s-20260816-0740-l32audit-diff.patch
++
++The response must contain the complete audit findings.
++
++Handoff using exactly:
++
++/home/anatolschwartz/code/prom-resp/push-response.sh s-20260816-0740-l32audit
++
++Then STOP.
++
++Continue Phase 2 #32 from the CURRENT working tree.
++
++Change only the Tea Time marble initial position:
++- keep x = 400
++- change y = 300 to y = 180
++
++Do not change tabletop, Teapot, cup, physics, or reference routes yet.
++
++Verify in the real Phaser/Matter browser:
++- marble starts at (400,180);
++- falls vertically when unobstructed;
++- sprite/body remain aligned.
++
++Do not commit/push Contraption Lab.
++
++Update the existing #32 response/diff artifacts.
++
++Handoff using exactly:
++/home/anatolschwartz/code/prom-resp/push-response.sh s-20260815-1658-l32a
++
++IMPORTANT: append THIS FULL ORIGINAL OPERATIONAL PROMPT VERBATIM to docs/CODEX_PROMPTS.md.
++
++Then STOP.
++
++Continue Phase 2 #32 from the CURRENT working tree.
++
++Session token:
++s-20260815-1658-l32a
++
++The previous run claimed a partial held-placement state implementation, but the handoff diff did not contain it and required tests/prompt logging were incomplete.
++
++Complete and verify ONLY slice 1:
++
++STATE/ACTION PRIMITIVES + UNIT TESTS.
++
++First inspect the CURRENT working tree. Preserve any correct partial implementation already present; do not duplicate or rewrite it unnecessarily.
++
++Scope:
++- src/state/gameState.ts and directly related state/type definitions if required
++- focused state unit tests
++- docs/CODEX_PROMPTS.md only for mandatory prompt logging
++
++Do NOT modify:
++- Controls.ts
++- main.ts
++- PrototypeScene.ts
++- rendering/input
++- Matter/contact logic
++- Reset/puzzle lifecycle wiring
++- E2E/browser behavior
++- Tea Time level data
++- #30/#31
++
++Required state behavior:
++
++1. GameState has generic `heldPlacement` containing:
++   - part type
++   - provisional id
++   - provisional transform: position + rotation
++
++Default: no held placement.
++
++2. Actions/reducer support:
++- begin-held-placement
++- update-held-placement
++- commit-held-placement
++- cancel-held-placement
++
++3. Semantics:
++- begin requires available inventory
++- begin does NOT decrement inventory
++- update modifies provisional transform only
++- cancel clears heldPlacement and preserves inventory
++- commit requires active heldPlacement
++- commit decrements matching inventory exactly once
++- commit selects the provisional id
++- commit clears heldPlacement
++- repeated commit with no heldPlacement is inert
++- insufficient inventory cannot begin held placement
++
++No runtime/render/Matter objects in this slice.
++
++Required focused unit tests:
++- default heldPlacement empty
++- begin preserves inventory
++- begin rejected with insufficient inventory
++- transform update works
++- cancel preserves inventory
++- commit decrements exactly once
++- commit selects provisional id
++- commit clears heldPlacement
++- repeated commit cannot double-decrement
++
++Run:
++- focused relevant unit tests
++- npm run typecheck
++- npm run lint
++- git diff --check
++
++No browser/manual testing is required for this state-only slice.
++
++Do not commit or push Contraption Lab.
++
++IMPORTANT HANDOFF CORRECTION:
++The previous response and patch were inconsistent. This run must regenerate the handoff artifacts from the CURRENT working tree so that the patch actually contains every implementation/test change reported in the response.
++
++Create/update:
++- s-20260815-1658-l32a-response.md
++- s-20260815-1658-l32a-diff.patch
++
++Before handoff, verify:
++- the response names the actual changed implementation/test files;
++- the diff patch contains those exact changes;
++- no claimed implementation change is absent from the patch;
++- tests/check results are reported accurately;
++- no accidental unrelated changes were added.
++
++The response must clearly separate:
++- implementation
++- automated tests/checks
++- diff/artifact verification
++- unresolved issues
++- next integration boundary
++
++Handoff using exactly:
++/home/anatolschwartz/code/prom-resp/push-response.sh s-20260815-1658-l32a
++
++IMPORTANT: append THIS FULL ORIGINAL OPERATIONAL PROMPT VERBATIM to docs/CODEX_PROMPTS.md.
++Do not paraphrase, reconstruct, summarize, or omit any part of it.
++
++Then STOP.
+diff --git a/src/state/gameState.ts b/src/state/gameState.ts
+index 5d453ec..d8d8bce 100644
+--- a/src/state/gameState.ts
++++ b/src/state/gameState.ts
+@@ -3,7 +3,10 @@ import type {
+   InventoryDefinition,
+   Point,
+ } from "../levels/levelTypes";
+-import { createEmptyInventory } from "../levels/partRegistry";
++import {
++  createEmptyInventory,
++  type InventoryPartKey,
++} from "../levels/partRegistry";
+ 
+ export type GameMode = "edit" | "running" | "paused" | "failed";
+ export const TRAY_BLOCK_ID = "tray-block-1";
+@@ -11,6 +14,7 @@ export const TRAY_BALL_ID_PREFIX = "tray-ball-";
+ export const TRAY_BLOCK_ID_PREFIX = "tray-block-";
+ export const TRAY_RAMP_ID_PREFIX = "tray-ramp-";
+ export const TRAY_MATTRESS_ID_PREFIX = "tray-mattress-";
++export const TRAY_TEAPOT_ID_PREFIX = "tray-teapot-";
+ 
+ export interface RampTransform {
+   position: Point;
+@@ -25,6 +29,26 @@ export interface BallTransform {
+   position: Point;
+ }
+ 
++export interface HeldPlacement {
++  part: InventoryPartKey;
++  id: string;
++  transform: RampTransform;
++}
++
++export interface BeginHeldPlacementAction {
++  type: "begin-held-placement";
++  placement: HeldPlacement;
++}
++
++export interface UpdateHeldPlacementAction {
++  type: "update-held-placement";
++  transform: RampTransform;
++}
++
++export interface CommitHeldPlacementAction {
++  type: "commit-held-placement";
++}
++
+ export interface RunSnapshot {
+   rampTransforms: Record<string, RampTransform>;
+   blockTransforms: Record<string, BlockTransform>;
+@@ -34,6 +58,7 @@ export interface RunSnapshot {
+   trayBlockCount: number;
+   trayRampCount: number;
+   trayMattressCount: number;
++  trayTeapotCount: number;
+ }
+ 
+ export interface SelectComponentAction {
+@@ -65,11 +90,16 @@ export interface SpawnTrayMattressAction {
+   type: "spawn-tray-mattress";
+   componentId: string;
+ }
++export interface SpawnTrayTeapotAction {
++  type: "spawn-tray-teapot";
++  componentId: string;
++}
+ 
+ export interface RemoveComponentAction {
+   type: "remove-component";
+   componentId: string;
+-  returnsTrayPart: "ball" | "bird" | "block" | "ramp" | "mattress" | null;
++  returnsTrayPart:
++    "ball" | "bird" | "block" | "ramp" | "mattress" | "teapot" | null;
+ }
+ 
+ export interface AdvanceTimeAction {
+@@ -91,6 +121,11 @@ export type GameAction =
+   | SpawnTrayBirdAction
+   | SpawnTrayRampAction
+   | SpawnTrayMattressAction
++  | SpawnTrayTeapotAction
++  | BeginHeldPlacementAction
++  | UpdateHeldPlacementAction
++  | CommitHeldPlacementAction
++  | { type: "cancel-held-placement" }
+   | RemoveComponentAction
+   | AdvanceTimeAction;
+ 
+@@ -105,11 +140,13 @@ export interface GameState {
+   blockTransforms: Record<string, BlockTransform>;
+   ballTransforms: Record<string, BallTransform>;
+   selectedComponentId: string | null;
++  heldPlacement: HeldPlacement | null;
+   trayBallCount: number;
+   trayBirdCount: number;
+   trayBlockCount: number;
+   trayRampCount: number;
+   trayMattressCount: number;
++  trayTeapotCount: number;
+   runSnapshot?: RunSnapshot;
+ }
+ 
+@@ -140,11 +177,13 @@ export function createInitialGameState(
+     blockTransforms: {},
+     ballTransforms: { ...normalizedBallTransforms },
+     selectedComponentId: null,
++    heldPlacement: null,
+     trayBallCount: normalizedInventory.ball,
+     trayBirdCount: normalizedInventory.bird,
+     trayBlockCount: normalizedInventory.block,
+     trayRampCount: normalizedInventory.ramp,
+     trayMattressCount: normalizedInventory.mattress,
++    trayTeapotCount: normalizedInventory.teapot,
+   };
+ }
+ 
+@@ -186,6 +225,7 @@ function createRunSnapshot(state: Readonly<GameState>): RunSnapshot {
+     trayBlockCount: state.trayBlockCount,
+     trayRampCount: state.trayRampCount,
+     trayMattressCount: state.trayMattressCount,
++    trayTeapotCount: state.trayTeapotCount,
+   };
+ }
+ 
+@@ -202,10 +242,39 @@ function cloneRunSnapshot(
+       trayBlockCount: snapshot.trayBlockCount,
+       trayRampCount: snapshot.trayRampCount,
+       trayMattressCount: snapshot.trayMattressCount,
++      trayTeapotCount: snapshot.trayTeapotCount,
+     }
+   );
+ }
+ 
++type TrayCountKey =
++  | "trayBallCount"
++  | "trayBirdCount"
++  | "trayBlockCount"
++  | "trayRampCount"
++  | "trayMattressCount"
++  | "trayTeapotCount";
++
++const trayCountKeyByPart: Record<InventoryPartKey, TrayCountKey> = {
++  ball: "trayBallCount",
++  bird: "trayBirdCount",
++  block: "trayBlockCount",
++  ramp: "trayRampCount",
++  mattress: "trayMattressCount",
++  teapot: "trayTeapotCount",
++};
++
++function cloneHeldPlacement(placement: Readonly<HeldPlacement>): HeldPlacement {
++  return {
++    part: placement.part,
++    id: placement.id,
++    transform: {
++      position: { ...placement.transform.position },
++      rotation: placement.transform.rotation,
++    },
++  };
++}
++
+ export function transitionGameState(
+   state: Readonly<GameState>,
+   action: GameAction,
+@@ -228,11 +297,13 @@ export function transitionGameState(
+       blockTransforms: { ...state.runSnapshot.blockTransforms },
+       ballTransforms: { ...state.runSnapshot.ballTransforms },
+       selectedComponentId: null,
++      heldPlacement: null,
+       trayBallCount: state.runSnapshot.trayBallCount,
+       trayBirdCount: state.runSnapshot.trayBirdCount,
+       trayBlockCount: state.runSnapshot.trayBlockCount,
+       trayRampCount: state.runSnapshot.trayRampCount,
+       trayMattressCount: state.runSnapshot.trayMattressCount,
++      trayTeapotCount: state.runSnapshot.trayTeapotCount,
+       runSnapshot: cloneRunSnapshot(state.runSnapshot),
+     };
+   }
+@@ -271,11 +342,13 @@ export function transitionGameState(
+       blockTransforms: { ...state.blockTransforms },
+       ballTransforms: { ...state.ballTransforms },
+       selectedComponentId: null,
++      heldPlacement: null,
+       trayBallCount: state.trayBallCount,
+       trayBirdCount: state.trayBirdCount,
+       trayBlockCount: state.trayBlockCount,
+       trayRampCount: state.trayRampCount,
+       trayMattressCount: state.trayMattressCount,
++      trayTeapotCount: state.trayTeapotCount,
+       runSnapshot: cloneRunSnapshot(state.runSnapshot),
+     };
+   }
+@@ -286,6 +359,49 @@ export function transitionGameState(
+       blockTransforms: { ...state.blockTransforms },
+     };
+   }
++  if (typeof action === "object" && action.type === "begin-held-placement") {
++    const trayCountKey = trayCountKeyByPart[action.placement.part];
++    return state.mode === "edit" &&
++      state.heldPlacement === null &&
++      state[trayCountKey] > 0
++      ? {
++          ...state,
++          heldPlacement: cloneHeldPlacement(action.placement),
++        }
++      : state;
++  }
++  if (typeof action === "object" && action.type === "update-held-placement") {
++    return state.heldPlacement
++      ? {
++          ...state,
++          heldPlacement: {
++            ...state.heldPlacement,
++            transform: {
++              position: { ...action.transform.position },
++              rotation: action.transform.rotation,
++            },
++          },
++        }
++      : state;
++  }
++  if (typeof action === "object" && action.type === "cancel-held-placement") {
++    return state.heldPlacement ? { ...state, heldPlacement: null } : state;
++  }
++  if (typeof action === "object" && action.type === "commit-held-placement") {
++    if (!state.heldPlacement) {
++      return state;
++    }
++    const trayCountKey = trayCountKeyByPart[state.heldPlacement.part];
++    if (state[trayCountKey] <= 0) {
++      return state;
++    }
++    return {
++      ...state,
++      [trayCountKey]: state[trayCountKey] - 1,
++      selectedComponentId: state.heldPlacement.id,
++      heldPlacement: null,
++    };
++  }
+   if (typeof action === "object" && action.type === "select-component") {
+     return state.mode === "edit"
+       ? { ...state, selectedComponentId: action.componentId }
+@@ -354,6 +470,15 @@ export function transitionGameState(
+         }
+       : { ...state };
+   }
++  if (typeof action === "object" && action.type === "spawn-tray-teapot") {
++    return state.mode === "edit" && state.trayTeapotCount > 0
++      ? {
++          ...state,
++          selectedComponentId: action.componentId,
++          trayTeapotCount: state.trayTeapotCount - 1,
++        }
++      : { ...state };
++  }
+   if (typeof action === "object" && action.type === "remove-component") {
+     if (state.mode !== "edit") {
+       return {
+@@ -405,6 +530,10 @@ export function transitionGameState(
+         action.returnsTrayPart === "mattress"
+           ? state.trayMattressCount + 1
+           : state.trayMattressCount,
++      trayTeapotCount:
++        action.returnsTrayPart === "teapot"
++          ? state.trayTeapotCount + 1
++          : state.trayTeapotCount,
+     };
+   }
+   if (action === "deselect" && state.mode === "edit") {
+@@ -421,11 +550,13 @@ export function transitionGameState(
+       rampTransforms: { ...state.rampTransforms },
+       blockTransforms: { ...state.blockTransforms },
+       selectedComponentId: null,
++      heldPlacement: null,
+       trayBallCount: state.trayBallCount,
+       trayBirdCount: state.trayBirdCount,
+       trayBlockCount: state.trayBlockCount,
+       trayRampCount: state.trayRampCount,
+       trayMattressCount: state.trayMattressCount,
++      trayTeapotCount: state.trayTeapotCount,
+       runSnapshot: createRunSnapshot(state),
+     };
+   }
+@@ -440,11 +571,13 @@ export function transitionGameState(
+       rampTransforms: { ...state.rampTransforms },
+       blockTransforms: { ...state.blockTransforms },
+       selectedComponentId: null,
++      heldPlacement: null,
+       trayBallCount: state.trayBallCount,
+       trayBirdCount: state.trayBirdCount,
+       trayBlockCount: state.trayBlockCount,
+       trayRampCount: state.trayRampCount,
+       trayMattressCount: state.trayMattressCount,
++      trayTeapotCount: state.trayTeapotCount,
+       runSnapshot: cloneRunSnapshot(state.runSnapshot),
+     };
+   }
+@@ -459,11 +592,13 @@ export function transitionGameState(
+       rampTransforms: { ...state.rampTransforms },
+       blockTransforms: { ...state.blockTransforms },
+       selectedComponentId: null,
++      heldPlacement: null,
+       trayBallCount: state.trayBallCount,
+       trayBirdCount: state.trayBirdCount,
+       trayBlockCount: state.trayBlockCount,
+       trayRampCount: state.trayRampCount,
+       trayMattressCount: state.trayMattressCount,
++      trayTeapotCount: state.trayTeapotCount,
+       runSnapshot: cloneRunSnapshot(state.runSnapshot),
+     };
+   }
+@@ -478,11 +613,13 @@ export function transitionGameState(
+       rampTransforms: { ...state.rampTransforms },
+       blockTransforms: { ...state.blockTransforms },
+       selectedComponentId: null,
++      heldPlacement: null,
+       trayBallCount: state.trayBallCount,
+       trayBirdCount: state.trayBirdCount,
+       trayBlockCount: state.trayBlockCount,
+       trayRampCount: state.trayRampCount,
+       trayMattressCount: state.trayMattressCount,
++      trayTeapotCount: state.trayTeapotCount,
+       runSnapshot: cloneRunSnapshot(state.runSnapshot),
+     };
+   }
+diff --git a/tests/gameState.test.ts b/tests/gameState.test.ts
+index 678662b..9326ed0 100644
+--- a/tests/gameState.test.ts
++++ b/tests/gameState.test.ts
+@@ -31,6 +31,110 @@ const initialInventory = {
+ const initialGameState = createInitialGameState(initialInventory);
+ 
+ describe("game-state transitions", () => {
++  it("starts without a held placement", () => {
++    expect(createInitialGameState({ ramp: 1 }).heldPlacement).toBeNull();
++  });
++
++  it("begins a held placement without consuming inventory", () => {
++    const initial = createInitialGameState({ ramp: 1 });
++    const held = transitionGameState(initial, {
++      type: "begin-held-placement",
++      placement: {
++        part: "ramp",
++        id: "tray-ramp-1",
++        transform: { position: { x: 400, y: 180 }, rotation: 0 },
++      },
++    });
++
++    expect(held.trayRampCount).toBe(1);
++    expect(held.selectedComponentId).toBeNull();
++    expect(held.heldPlacement).toEqual({
++      part: "ramp",
++      id: "tray-ramp-1",
++      transform: { position: { x: 400, y: 180 }, rotation: 0 },
++    });
++  });
++
++  it("does not begin a held placement without matching inventory", () => {
++    const initial = createInitialGameState({ ramp: 0 });
++    const attempted = transitionGameState(initial, {
++      type: "begin-held-placement",
++      placement: {
++        part: "ramp",
++        id: "tray-ramp-1",
++        transform: { position: { x: 400, y: 180 }, rotation: 0 },
++      },
++    });
++
++    expect(attempted).toBe(initial);
++    expect(attempted.heldPlacement).toBeNull();
++  });
++
++  it("updates only the held placement transform", () => {
++    const held = transitionGameState(createInitialGameState({ ramp: 1 }), {
++      type: "begin-held-placement",
++      placement: {
++        part: "ramp",
++        id: "tray-ramp-1",
++        transform: { position: { x: 400, y: 180 }, rotation: 0 },
++      },
++    });
++    const updated = transitionGameState(held, {
++      type: "update-held-placement",
++      transform: { position: { x: 460, y: 240 }, rotation: 0.35 },
++    });
++
++    expect(held.heldPlacement?.transform).toEqual({
++      position: { x: 400, y: 180 },
++      rotation: 0,
++    });
++    expect(updated.heldPlacement?.transform).toEqual({
++      position: { x: 460, y: 240 },
++      rotation: 0.35,
++    });
++    expect(updated.trayRampCount).toBe(1);
++  });
++
++  it("cancels a held placement without consuming inventory", () => {
++    const held = transitionGameState(createInitialGameState({ ramp: 1 }), {
++      type: "begin-held-placement",
++      placement: {
++        part: "ramp",
++        id: "tray-ramp-1",
++        transform: { position: { x: 400, y: 180 }, rotation: 0 },
++      },
++    });
++    const cancelled = transitionGameState(held, {
++      type: "cancel-held-placement",
++    });
++
++    expect(cancelled.heldPlacement).toBeNull();
++    expect(cancelled.trayRampCount).toBe(1);
++  });
++
++  it("commits a held placement once and selects its provisional id", () => {
++    const held = transitionGameState(createInitialGameState({ ramp: 1 }), {
++      type: "begin-held-placement",
++      placement: {
++        part: "ramp",
++        id: "tray-ramp-1",
++        transform: { position: { x: 400, y: 180 }, rotation: 0 },
++      },
++    });
++    const committed = transitionGameState(held, {
++      type: "commit-held-placement",
++    });
++    const repeatedCommit = transitionGameState(committed, {
++      type: "commit-held-placement",
++    });
++
++    expect(committed.trayRampCount).toBe(0);
++    expect(committed.selectedComponentId).toBe("tray-ramp-1");
++    expect(committed.heldPlacement).toBeNull();
++    expect(repeatedCommit).toBe(committed);
++    expect(repeatedCommit.trayRampCount).toBe(0);
++  });
++
+   it("tracks a player ball through placement, removal, rerun, and reset", () => {
+     const balls = {
+       "fixed-ball": { position: { x: 215, y: 135 } },
+@@ -108,11 +212,13 @@ describe("game-state transitions", () => {
+       blockTransforms: {},
+       ballTransforms: {},
+       selectedComponentId: null,
++      heldPlacement: null,
+       trayBallCount: 0,
+       trayBirdCount: 0,
+       trayBlockCount: 1,
+       trayRampCount: 0,
+       trayMattressCount: 0,
++      trayTeapotCount: 0,
+     });
+     expect(getEnabledControls(initialGameState)).toEqual({
+       edit: false,
+@@ -377,6 +483,7 @@ describe("game-state transitions", () => {
+       trayBlockCount: 1,
+       trayRampCount: 0,
+       trayMattressCount: 0,
++      trayTeapotCount: 0,
+     });
+     expect(rerun).toMatchObject({
+       mode: "running",
+@@ -464,11 +571,13 @@ describe("game-state transitions", () => {
+       blockTransforms: {},
+       ballTransforms: {},
+       selectedComponentId: null,
++      heldPlacement: null,
+       trayBallCount: 0,
+       trayBirdCount: 0,
+       trayBlockCount: 1,
+       trayRampCount: 0,
+       trayMattressCount: 0,
++      trayTeapotCount: 0,
+       runSnapshot: {
+         rampTransforms: {},
+         blockTransforms: {},
+@@ -478,6 +587,7 @@ describe("game-state transitions", () => {
+         trayBlockCount: 1,
+         trayRampCount: 0,
+         trayMattressCount: 0,
++        trayTeapotCount: 0,
+       },
+     });
+     expect(getEnabledControls(success)).toEqual({
+@@ -610,11 +720,13 @@ describe("reset behavior", () => {
+       blockTransforms: { [TRAY_BLOCK_ID]: blockTransform },
+       ballTransforms: {},
+       selectedComponentId: TRAY_BLOCK_ID,
++      heldPlacement: null,
+       trayBallCount: 0,
+       trayBirdCount: 0,
+       trayBlockCount: 0,
+       trayRampCount: 0,
+       trayMattressCount: 0,
++      trayTeapotCount: 0,
+     };
+     const firstReset = transitionGameState(changed, "reset");
+     const secondReset = transitionGameState(firstReset, "reset");
