@@ -1,8 +1,8 @@
 diff --git a/docs/CODEX_PROMPTS.md b/docs/CODEX_PROMPTS.md
-index c2cb09a..d7b2acf 100644
+index c2cb09a..5ccab3a 100644
 --- a/docs/CODEX_PROMPTS.md
 +++ b/docs/CODEX_PROMPTS.md
-@@ -6924,3 +6924,106 @@ IMPORTANT: append THIS FULL ORIGINAL OPERATIONAL PROMPT VERBATIM to docs/CODEX_P
+@@ -6924,3 +6924,188 @@ IMPORTANT: append THIS FULL ORIGINAL OPERATIONAL PROMPT VERBATIM to docs/CODEX_P
  Do not paraphrase, reconstruct, summarize, or omit any part of it.
  
  Then STOP.
@@ -109,8 +109,90 @@ index c2cb09a..d7b2acf 100644
 +Do not paraphrase, reconstruct, summarize, or omit any part of it.
 +
 +Then STOP.
++
++Continue Phase 2 #32.
++
++Work ONLY in:
++/home/anatolschwartz/code/contraption-lab
++
++Verify:
++- branch = phase2-32-tea-time
++- do NOT modify /home/anatolschwartz/code/contraption-lab-main
++
++Session token:
++s-20260815-1658-l32a
++
++DIAGNOSE AND FIX ONLY the Slice 4 committed-transform mismatch.
++
++Observed browser test:
++
++After valid held Ramp commit:
++- heldPlacement = null
++- trayRampCount = 0
++- runtimeRampCount = 1
++- rampHasMatterBody = true
++- contactRegistered = true
++- selectedComponentId = held-ramp-1
++- BUT rampMatchesTarget = false
++
++Manual browser testing confirms click-to-place works.
++
++Also observed visually:
++- marble penetrates roughly halfway into Ramp;
++- Ramp effective collision line appears near the visual middle rather than the visible upper surface.
++
++Do NOT weaken the existing test.
++
++First instrument/inspect the exact values for:
++1. held Ramp transform immediately before commit;
++2. requested commit transform;
++3. committed runtime Ramp visual/container transform;
++4. committed Matter body position/angle;
++5. the geometry offsets used by createRamp / Ramp rendering.
++
++Determine whether:
++- the test is comparing incompatible coordinate anchors; OR
++- production creation changes/offsets the held transform.
++
++Required invariant:
++held transform before commit ~= committed runtime placement anchor ~= Matter placement anchor,
++subject only to intentional documented geometry-local offsets.
++
++If production is wrong, fix the smallest generic Ramp/runtime geometry issue causing the mismatch.
++If the test anchor is wrong, correct only the test and explain why.
++
++Do NOT yet fix:
++- Reset stale visuals;
++- placed-part movement trap;
++- Teapot geometry;
++- Cup geometry/location;
++- Slice 5 cancel/Q/E/lifecycle features;
++- Tea Time reference route.
++
++Run:
++- focused relevant unit/integration tests
++- focused Playwright Slice 4 test
++- npm run typecheck
++- npm run lint
++- git diff --check
++
++Do not commit or push Contraption Lab.
++
++Create/update:
++- s-20260815-1658-l32a-response.md
++- s-20260815-1658-l32a-diff.patch
++
++Response must report the exact pre-commit held transform, runtime visual transform, Matter transform, root cause, fix, and Playwright result.
++
++Handoff using exactly:
++/home/anatolschwartz/code/prom-resp/push-response.sh s-20260815-1658-l32a
++
++IMPORTANT: append THIS FULL ORIGINAL OPERATIONAL PROMPT VERBATIM to docs/CODEX_PROMPTS.md.
++Do not paraphrase, reconstruct, summarize, or omit any part.
++
++Then STOP.
 diff --git a/e2e/teaTime.e2e.ts b/e2e/teaTime.e2e.ts
-index 8415e2e..fbc17a2 100644
+index 8415e2e..2aa0a34 100644
 --- a/e2e/teaTime.e2e.ts
 +++ b/e2e/teaTime.e2e.ts
 @@ -121,7 +121,7 @@ test("opens Parts below the controls and starts held Teapot placement", async ({
@@ -131,11 +213,17 @@ index 8415e2e..fbc17a2 100644
    const canvasCoordinateTolerance = 1;
    await canvas.hover({
      position: {
-@@ -192,72 +192,170 @@ test("renders and moves a held Ramp preview without runtime registration", async
+@@ -192,34 +192,37 @@ test("renders and moves a held Ramp preview without runtime registration", async
    });
    await expect
      .poll(() =>
 -      page.evaluate((tolerance) => {
+-        const state = window.__contraptionLabTest?.getGameState();
+-        const heldPosition = state?.heldPlacement?.transform.position;
+-        const scene =
+-          window.__contraptionLabTest?.getPrototypeScene() as unknown as {
+-            heldPlacementVisual?: { x: number; y: number };
+-            children: { list: Array<{ name: string }> };
 +      page.evaluate(
 +        ({ target, tolerance }) => {
 +          const state = window.__contraptionLabTest?.getGameState();
@@ -163,39 +251,8 @@ index 8415e2e..fbc17a2 100644
 +              Math.abs(scene.heldPlacementVisual.x - target.x) <= tolerance &&
 +              Math.abs(scene.heldPlacementVisual.y - target.y) <= tolerance,
 +            trayRampCount: state?.trayRampCount,
-+          };
-+        },
-+        { target, tolerance: canvasCoordinateTolerance },
-+      ),
-+    )
-+    .toEqual({
-+      heldMatchesPreview: true,
-+      heldWithinTargetTolerance: true,
-+      previewCount: 1,
-+      previewWithinTargetTolerance: true,
-+      trayRampCount: 1,
-+    });
-+
-+  await canvas.click({
-+    position: {
-+      x: (target.x / 960) * canvasBox.width,
-+      y: (target.y / 540) * canvasBox.height,
-+    },
-+  });
-+  await expect
-+    .poll(() =>
-+      page.evaluate(() => {
-         const state = window.__contraptionLabTest?.getGameState();
--        const heldPosition = state?.heldPlacement?.transform.position;
-         const scene =
-           window.__contraptionLabTest?.getPrototypeScene() as unknown as {
--            heldPlacementVisual?: { x: number; y: number };
-+            contactObjects: Map<unknown, unknown>;
-             children: { list: Array<{ name: string }> };
-+            matter: { world: { engine: { world: { bodies: unknown[] } } } };
-+            ramps: Map<string, unknown>;
            };
-         return {
+-        return {
 -          heldMatchesPreview:
 -            heldPosition !== undefined &&
 -            scene.heldPlacementVisual !== undefined &&
@@ -205,32 +262,23 @@ index 8415e2e..fbc17a2 100644
 -            heldPosition !== undefined &&
 -            Math.abs(heldPosition.x - 540) <= tolerance &&
 -            Math.abs(heldPosition.y - 300) <= tolerance,
-+          heldPlacement: state?.heldPlacement,
-+          contactCount: scene.contactObjects.size,
-+          matterBodyCount: scene.matter.world.engine.world.bodies.length,
-           previewCount: scene.children.list.filter((child) =>
-             child.name.startsWith("held-placement:"),
-           ).length,
+-          previewCount: scene.children.list.filter((child) =>
+-            child.name.startsWith("held-placement:"),
+-          ).length,
 -          previewWithinTargetTolerance:
 -            scene.heldPlacementVisual !== undefined &&
 -            Math.abs(scene.heldPlacementVisual.x - 540) <= tolerance &&
 -            Math.abs(scene.heldPlacementVisual.y - 300) <= tolerance,
-+          runtimeRampCount: scene.ramps.size,
-           trayRampCount: state?.trayRampCount,
-         };
+-          trayRampCount: state?.trayRampCount,
+-        };
 -      }, canvasCoordinateTolerance),
-+      }),
++        },
++        { target, tolerance: canvasCoordinateTolerance },
++      ),
      )
--    .toEqual({
--      heldMatchesPreview: true,
--      heldWithinTargetTolerance: true,
-+    .toMatchObject({
-+      heldPlacement: { part: "ramp" },
-+      contactCount: before.contactCount,
-+      matterBodyCount: before.matterBodyCount,
-       previewCount: 1,
--      previewWithinTargetTolerance: true,
-+      runtimeRampCount: 0,
+     .toEqual({
+       heldMatchesPreview: true,
+@@ -229,22 +232,27 @@ test("renders and moves a held Ramp preview without runtime registration", async
        trayRampCount: 1,
      });
  
@@ -239,6 +287,43 @@ index 8415e2e..fbc17a2 100644
 -      type: "cancel-held-placement",
 -    }),
 -  );
++  await canvas.click({
++    position: {
++      x: (target.x / 960) * canvasBox.width,
++      y: (target.y / 540) * canvasBox.height,
++    },
++  });
+   await expect
+     .poll(() =>
+       page.evaluate(() => {
+         const state = window.__contraptionLabTest?.getGameState();
+         const scene =
+           window.__contraptionLabTest?.getPrototypeScene() as unknown as {
++            contactObjects: Map<unknown, unknown>;
+             children: { list: Array<{ name: string }> };
++            matter: { world: { engine: { world: { bodies: unknown[] } } } };
+             ramps: Map<string, unknown>;
+           };
+         return {
+           heldPlacement: state?.heldPlacement,
++          contactCount: scene.contactObjects.size,
++          matterBodyCount: scene.matter.world.engine.world.bodies.length,
+           previewCount: scene.children.list.filter((child) =>
+             child.name.startsWith("held-placement:"),
+           ).length,
+@@ -253,11 +261,143 @@ test("renders and moves a held Ramp preview without runtime registration", async
+         };
+       }),
+     )
++    .toMatchObject({
++      heldPlacement: { part: "ramp" },
++      contactCount: before.contactCount,
++      matterBodyCount: before.matterBodyCount,
++      previewCount: 1,
++      runtimeRampCount: 0,
++      trayRampCount: 1,
++    });
++
 +  const validTarget = { x: 540, y: 300 };
 +  await canvas.hover({
 +    position: {
@@ -246,50 +331,86 @@ index 8415e2e..fbc17a2 100644
 +      y: (validTarget.y / 540) * canvasBox.height,
 +    },
 +  });
++  const heldBeforeCommit = await page.evaluate(() => {
++    const heldPlacement =
++      window.__contraptionLabTest?.getGameState().heldPlacement;
++    if (!heldPlacement) throw new Error("Ramp was not held before commit.");
++    return {
++      position: { ...heldPlacement.transform.position },
++      rotation: heldPlacement.transform.rotation,
++    };
++  });
 +  await canvas.click({
 +    position: {
 +      x: (validTarget.x / 960) * canvasBox.width,
 +      y: (validTarget.y / 540) * canvasBox.height,
 +    },
 +  });
-   await expect
-     .poll(() =>
--      page.evaluate(() => {
-+      page.evaluate((tolerance) => {
-         const state = window.__contraptionLabTest?.getGameState();
-         const scene =
-           window.__contraptionLabTest?.getPrototypeScene() as unknown as {
-+            contactObjects: Map<unknown, { id: string }>;
-             children: { list: Array<{ name: string }> };
--            ramps: Map<string, unknown>;
-+            matter: { world: { engine: { world: { bodies: unknown[] } } } };
-+            ramps: Map<
-+              string,
-+              { shape: { body: unknown; x: number; y: number } }
-+            >;
-           };
-+        const ramp = scene.ramps.get("held-ramp-1");
-         return {
-+          contactRegistered: [...scene.contactObjects.values()].some(
-+            (contact) => contact.id === "held-ramp-1",
-+          ),
-           heldPlacement: state?.heldPlacement,
-+          matterBodyCount: scene.matter.world.engine.world.bodies.length,
-           previewCount: scene.children.list.filter((child) =>
-             child.name.startsWith("held-placement:"),
-           ).length,
-+          rampHasMatterBody: ramp?.shape.body !== undefined,
-+          rampMatchesTarget:
-+            ramp !== undefined &&
-+            Math.abs(ramp.shape.x - 540) <= tolerance &&
-+            Math.abs(ramp.shape.y - 300) <= tolerance,
-           runtimeRampCount: scene.ramps.size,
-+          selectedComponentId: state?.selectedComponentId,
-           trayRampCount: state?.trayRampCount,
-         };
--      }),
-+      }, canvasCoordinateTolerance),
-     )
++  await expect
++    .poll(() =>
++      page.evaluate(
++        ({ held, tolerance }) => {
++          const state = window.__contraptionLabTest?.getGameState();
++          const scene =
++            window.__contraptionLabTest?.getPrototypeScene() as unknown as {
++              contactObjects: Map<unknown, { id: string }>;
++              children: { list: Array<{ name: string }> };
++              matter: { world: { engine: { world: { bodies: unknown[] } } } };
++              ramps: Map<
++                string,
++                {
++                  shape: {
++                    body?: {
++                      angle: number;
++                      position: { x: number; y: number };
++                    };
++                    rotation: number;
++                    x: number;
++                    y: number;
++                  };
++                  sprite?: { rotation: number; x: number; y: number };
++                }
++              >;
++            };
++          const ramp = scene.ramps.get("held-ramp-1");
++          const body = ramp?.shape.body;
++          return {
++            contactRegistered: [...scene.contactObjects.values()].some(
++              (contact) => contact.id === "held-ramp-1",
++            ),
++            heldPlacement: state?.heldPlacement,
++            matterBodyCount: scene.matter.world.engine.world.bodies.length,
++            previewCount: scene.children.list.filter((child) =>
++              child.name.startsWith("held-placement:"),
++            ).length,
++            rampHasMatterBody: ramp?.shape.body !== undefined,
++            matterMatchesHeld:
++              body !== undefined &&
++              Math.abs(body.position.x - held.position.x) <= tolerance &&
++              Math.abs(body.position.y - held.position.y) <= tolerance &&
++              Math.abs(body.angle - held.rotation) <= 0.01,
++            rampMatchesTarget:
++              ramp !== undefined &&
++              Math.abs(ramp.shape.x - 540) <= tolerance &&
++              Math.abs(ramp.shape.y - 300) <= tolerance,
++            runtimeAnchorMatchesHeld:
++              ramp !== undefined &&
++              Math.abs(ramp.shape.x - held.position.x) <= tolerance &&
++              Math.abs(ramp.shape.y - held.position.y) <= tolerance &&
++              Math.abs(ramp.shape.rotation - held.rotation) <= 0.01,
++            runtimeRampCount: scene.ramps.size,
++            selectedComponentId: state?.selectedComponentId,
++            trayRampCount: state?.trayRampCount,
++            visualAnchorMatchesHeld:
++              ramp?.sprite !== undefined &&
++              Math.abs(ramp.sprite.x - held.position.x) <= tolerance &&
++              Math.abs(ramp.sprite.y - held.position.y) <= tolerance &&
++              Math.abs(ramp.sprite.rotation - held.rotation) <= 0.01,
++          };
++        },
++        { held: heldBeforeCommit, tolerance: canvasCoordinateTolerance },
++      ),
++    )
      .toEqual({
 +      contactRegistered: true,
        heldPlacement: null,
@@ -298,10 +419,13 @@ index 8415e2e..fbc17a2 100644
 -      runtimeRampCount: 0,
 -      trayRampCount: 1,
 +      rampHasMatterBody: true,
++      matterMatchesHeld: true,
 +      rampMatchesTarget: true,
++      runtimeAnchorMatchesHeld: true,
 +      runtimeRampCount: 1,
 +      selectedComponentId: "held-ramp-1",
 +      trayRampCount: 0,
++      visualAnchorMatchesHeld: true,
 +    });
 +
 +  await canvas.click({
@@ -334,7 +458,7 @@ index 8415e2e..fbc17a2 100644
  });
  
 diff --git a/src/game/PrototypeScene.ts b/src/game/PrototypeScene.ts
-index 7bf26ff..ddb658c 100644
+index 7bf26ff..5043898 100644
 --- a/src/game/PrototypeScene.ts
 +++ b/src/game/PrototypeScene.ts
 @@ -300,6 +300,9 @@ export class PrototypeScene extends Phaser.Scene {
@@ -542,6 +666,25 @@ index 7bf26ff..ddb658c 100644
      if (!this.editInteractionEnabled) {
        this.playStorybookPoke(componentType, componentId);
        return;
+@@ -2098,11 +2267,13 @@ export class PrototypeScene extends Phaser.Scene {
+       { x, y },
+       { ...ramp.definition, rotation },
+     );
+-    const snapped = snapRampPlacement(
+-      position,
+-      rotation,
+-      this.level.rampSnapTargets ?? [],
+-    );
++    // State application must preserve the recorded placement anchor exactly.
++    // Snapping is an editor interaction affordance, not a transform migration.
++    // Otherwise applying state after a held placement can move a newly-created
++    // ramp to a nearby snap target that the player did not select.
++    const snapped = notify
++      ? snapRampPlacement(position, rotation, this.level.rampSnapTargets ?? [])
++      : { position, rotation };
+     const isSnapTarget = this.level.rampSnapTargets?.some(
+       (target) =>
+         target.x === snapped.position.x &&
 diff --git a/src/main.ts b/src/main.ts
 index 7b3880c..303423f 100644
 --- a/src/main.ts
