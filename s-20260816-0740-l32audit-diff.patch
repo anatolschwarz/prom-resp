@@ -1,0 +1,9 @@
+diff --git a/docs/CODEX_PROMPTS.md b/docs/CODEX_PROMPTS.md
+--- a/docs/CODEX_PROMPTS.md
++++ b/docs/CODEX_PROMPTS.md
+@@
+ Then STOP.
+ 
++# Codex diagnostic — audit #32 prompt logging
++
++Audit `docs/CODEX_PROMPTS.md` for Phase 2 milestone #32.
