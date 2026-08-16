@@ -1,8 +1,8 @@
 diff --git a/docs/CODEX_PROMPTS.md b/docs/CODEX_PROMPTS.md
-index 595e647..3a0d388 100644
+index 595e647..bc5924b 100644
 --- a/docs/CODEX_PROMPTS.md
 +++ b/docs/CODEX_PROMPTS.md
-@@ -6701,3 +6701,111 @@ IMPORTANT: append THIS FULL ORIGINAL OPERATIONAL PROMPT VERBATIM to docs/CODEX_P
+@@ -6701,3 +6701,166 @@ IMPORTANT: append THIS FULL ORIGINAL OPERATIONAL PROMPT VERBATIM to docs/CODEX_P
  Do not paraphrase, reconstruct, summarize, or omit any part of it.
  
  Then STOP.
@@ -114,11 +114,66 @@ index 595e647..3a0d388 100644
 +Do not paraphrase, reconstruct, summarize, or omit any part of it.
 +
 +Then STOP.
++
++Continue Phase 2 #32.
++
++Work ONLY in:
++/home/anatolschwartz/code/contraption-lab
++
++Verify:
++- branch = phase2-32-tea-time
++- do NOT modify /home/anatolschwartz/code/contraption-lab-main
++
++Session token:
++s-20260815-1658-l32a
++
++Fix ONLY the failing Slice 3 Playwright assertion.
++
++Observed real browser result:
++- requested pointer target: (540, 300)
++- heldPosition: (539.8830409356725, 299.81667394151026)
++- previewPosition: (539.8830409356725, 299.81667394151026)
++- previewCount: 1
++- trayRampCount: 1
++
++The production behavior is correct. The E2E incorrectly requires exact integer canvas coordinates.
++
++Required test correction:
++- do NOT change production code;
++- replace exact target coordinate equality with a small explicit tolerance suitable for DOM/canvas coordinate conversion (<= 1px);
++- still assert heldPosition and previewPosition match each other closely;
++- preserve assertions that previewCount = 1 and inventory remains unchanged;
++- do not weaken unrelated assertions.
++
++Run:
++npx playwright test e2e/teaTime.e2e.ts --grep "renders and moves a held Ramp preview without runtime registration" --reporter=line
++
++Also run:
++- npm run typecheck
++- npm run lint
++- git diff --check
++
++Do NOT implement Slice 4 yet.
++Do NOT commit or push Contraption Lab.
++
++Create/update:
++- s-20260815-1658-l32a-response.md
++- s-20260815-1658-l32a-diff.patch
++
++Response must report the exact assertion change and exact test results.
++
++Handoff using exactly:
++/home/anatolschwartz/code/prom-resp/push-response.sh s-20260815-1658-l32a
++
++IMPORTANT: append THIS FULL ORIGINAL OPERATIONAL PROMPT VERBATIM to docs/CODEX_PROMPTS.md.
++Do not paraphrase, reconstruct, summarize, or omit any part of it.
++
++Then STOP.
 diff --git a/e2e/teaTime.e2e.ts b/e2e/teaTime.e2e.ts
-index 8e3dd39..1d2d891 100644
+index 8e3dd39..8415e2e 100644
 --- a/e2e/teaTime.e2e.ts
 +++ b/e2e/teaTime.e2e.ts
-@@ -121,6 +121,134 @@ test("opens Parts below the controls and starts held Teapot placement", async ({
+@@ -121,6 +121,146 @@ test("opens Parts below the controls and starts held Teapot placement", async ({
      });
  });
  
@@ -184,6 +239,7 @@ index 8e3dd39..1d2d891 100644
 +    });
 +
 +  const target = { x: 540, y: 300 };
++  const canvasCoordinateTolerance = 1;
 +  await canvas.hover({
 +    position: {
 +      x: (target.x / 960) * canvasBox.width,
@@ -192,29 +248,40 @@ index 8e3dd39..1d2d891 100644
 +  });
 +  await expect
 +    .poll(() =>
-+      page.evaluate(() => {
++      page.evaluate((tolerance) => {
 +        const state = window.__contraptionLabTest?.getGameState();
++        const heldPosition = state?.heldPlacement?.transform.position;
 +        const scene =
 +          window.__contraptionLabTest?.getPrototypeScene() as unknown as {
 +            heldPlacementVisual?: { x: number; y: number };
 +            children: { list: Array<{ name: string }> };
 +          };
 +        return {
-+          heldPosition: state?.heldPlacement?.transform.position,
++          heldMatchesPreview:
++            heldPosition !== undefined &&
++            scene.heldPlacementVisual !== undefined &&
++            Math.abs(heldPosition.x - scene.heldPlacementVisual.x) <= 0.01 &&
++            Math.abs(heldPosition.y - scene.heldPlacementVisual.y) <= 0.01,
++          heldWithinTargetTolerance:
++            heldPosition !== undefined &&
++            Math.abs(heldPosition.x - 540) <= tolerance &&
++            Math.abs(heldPosition.y - 300) <= tolerance,
 +          previewCount: scene.children.list.filter((child) =>
 +            child.name.startsWith("held-placement:"),
 +          ).length,
-+          previewPosition: scene.heldPlacementVisual
-+            ? { x: scene.heldPlacementVisual.x, y: scene.heldPlacementVisual.y }
-+            : null,
++          previewWithinTargetTolerance:
++            scene.heldPlacementVisual !== undefined &&
++            Math.abs(scene.heldPlacementVisual.x - 540) <= tolerance &&
++            Math.abs(scene.heldPlacementVisual.y - 300) <= tolerance,
 +          trayRampCount: state?.trayRampCount,
 +        };
-+      }),
++      }, canvasCoordinateTolerance),
 +    )
-+    .toMatchObject({
-+      heldPosition: target,
++    .toEqual({
++      heldMatchesPreview: true,
++      heldWithinTargetTolerance: true,
 +      previewCount: 1,
-+      previewPosition: target,
++      previewWithinTargetTolerance: true,
 +      trayRampCount: 1,
 +    });
 +
